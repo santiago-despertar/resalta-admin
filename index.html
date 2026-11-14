@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
-:root{--surface:#F3F1EC;--raised:#FFFFFF;--mist:#E3E7EA;--ink:#16191D;--muted:#5B6470;--slate:#6E7E8E;--deep:#4A5866;--sand:#C8B48E;--line:#D3D8DD;--ok:#3F7A57;--bad:#A24B3E;--warn:#9A7524;
+:root{--surface:#F3F1EC;--raised:#FFFFFF;--mist:#E3E7EA;--ink:#16191D;--muted:#5B6470;--slate:#6E7E8E;--deep:#4A5866;--sand:#CFE4FF;--line:#D3D8DD;--ok:#3F7A57;--bad:#A24B3E;--warn:#9A7524;
 --sans:"Inter",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;--r:14px}
 *{box-sizing:border-box}html,body{margin:0;background:var(--surface);color:var(--ink);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
 button,input,select{font:inherit;color:inherit}a{color:var(--deep)}
@@ -255,7 +255,7 @@ async function vResumen(){
     ${card("Afiliados",num(k.afiliados),`${num(k.clics_afiliados)} clics · ${mxn(k.comisiones_pendientes_mxn)} por pagar`)}
   </div>
   <div class="grid two sec">
-    <div class="card"><h3>Visitantes y leads por día</h3>${lineas(r.serie,[{k:"visitantes",n:"Visitantes",c:"#4A5866"},{k:"leads",n:"Leads",c:"#C8B48E"},{k:"registros",n:"Cuentas",c:"#9DAAB6"}])}</div>
+    <div class="card"><h3>Visitantes y leads por día</h3>${lineas(r.serie,[{k:"visitantes",n:"Visitantes",c:"#4A5866"},{k:"leads",n:"Leads",c:"#4F82BC"},{k:"registros",n:"Cuentas",c:"#9DAAB6"}])}</div>
     <div class="card"><h3>Ingresos por día (MXN)</h3>${lineas(r.serie,[{k:"ingresos",n:"Ingresos",c:"#4A5866",barra:true}])}</div>
   </div>
   <div class="grid two sec">
@@ -270,7 +270,7 @@ async function vAnalitica(){
   main.innerHTML=`<h2>Analítica del sitio <span class="mut" style="font-size:15px">· ${esc(etiquetaRango())}</span></h2>
   <div class="card"><h3>Tráfico diario</h3>${lineas(r.serie,[{k:"vistas",n:"Páginas vistas",c:"#9DAAB6"},{k:"visitantes",n:"Visitantes únicos",c:"#4A5866"}],{alto:240})}</div>
   <div class="grid two sec">
-    <div class="card"><h3>Leads, cuentas y compras por día</h3>${lineas(r.serie,[{k:"leads",n:"Leads",c:"#C8B48E"},{k:"registros",n:"Cuentas",c:"#9DAAB6"},{k:"compras",n:"Compras",c:"#4A5866"}])}</div>
+    <div class="card"><h3>Leads, cuentas y compras por día</h3>${lineas(r.serie,[{k:"leads",n:"Leads",c:"#4F82BC"},{k:"registros",n:"Cuentas",c:"#9DAAB6"},{k:"compras",n:"Compras",c:"#4A5866"}])}</div>
     <div class="card"><h3>Páginas más vistas</h3>${barrasH(r.paginas,{max:12})}</div>
   </div>
   <div class="grid three sec">
