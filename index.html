@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Resalta · Admin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234A5866'/><text x='16' y='22' font-family='Helvetica' font-size='17' fill='white' text-anchor='middle'>r</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--surface:#F3F1EC;--raised:#FFFFFF;--mist:#E3E7EA;--ink:#16191D;--muted:#5B6470;--slate:#6E7E8E;--deep:#4A5866;--sand:#C8B48E;--line:#D3D8DD;--ok:#3F7A57;--bad:#A24B3E;--warn:#9A7524;
+--sans:"Inter",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;--r:14px}
+*{box-sizing:border-box}html,body{margin:0;background:var(--surface);color:var(--ink);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}a{color:var(--deep)}
+.hide{display:none!important}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px}
+header.top{position:sticky;top:0;z-index:20;background:rgba(243,241,236,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:14px;height:58px}
+.logo{font-size:19px;letter-spacing:-.01em}.logo small{font-size:12px;color:var(--muted);margin-left:6px;letter-spacing:.06em;text-transform:uppercase}
+.sp{flex:1}
+.btn{border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--slate)}.btn.p{background:var(--deep);border-color:var(--deep);color:#fff}
+select.btn{padding-right:28px;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;background-size:5px 5px;background-repeat:no-repeat}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:0 0 10px}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{border:0;background:none;padding:7px 13px;border-radius:999px;color:var(--muted);cursor:pointer;white-space:nowrap}
+nav.tabs button.on{background:var(--ink);color:#fff}
+main{padding:22px 0 60px}
+h2{font-size:22px;font-weight:400;margin:0 0 14px;letter-spacing:-.01em}
+h3{font-size:13px;font-weight:500;margin:0 0 12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.card{background:var(--raised);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.kpi .v{font:500 26px/1.1 var(--mono);letter-spacing:-.02em;margin-top:6px}
+.kpi .l{font-size:12.5px;color:var(--muted)}.kpi .s{font-size:12px;color:var(--muted);margin-top:4px}
+.two{grid-template-columns:1fr 1fr}.three{grid-template-columns:repeat(3,1fr)}
+@media(max-width:900px){.two,.three{grid-template-columns:1fr}}
+.tbl{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:500;color:var(--muted);font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;background:var(--raised)}
+td{padding:9px 10px;border-bottom:1px solid var(--mist);vertical-align:top}
+tr.click{cursor:pointer}tr.click:hover td{background:#F8F7F3}
+td.n,th.n{text-align:right;font-family:var(--mono);white-space:nowrap}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;background:var(--mist);color:var(--ink);white-space:nowrap}
+.pill.ok{background:#E2EEE6;color:var(--ok)}.pill.bad{background:#F4E3DF;color:var(--bad)}.pill.warn{background:#F3EBD9;color:var(--warn)}.pill.d{background:var(--deep);color:#fff}
+.mut{color:var(--muted)}.mono{font-family:var(--mono)}
+.search{width:100%;max-width:360px;border:1px solid var(--line);border-radius:999px;background:var(--raised);padding:9px 14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.funnel .st{display:grid;grid-template-columns:minmax(120px,220px) 1fr 90px;gap:12px;align-items:center;padding:7px 0}
+.funnel .tr{height:26px;background:var(--mist);border-radius:7px;overflow:hidden}.funnel .fl{height:100%;background:var(--deep);border-radius:7px}
+.funnel .pc{font-family:var(--mono);text-align:right;font-size:13px}
+@media(max-width:600px){.funnel .st{grid-template-columns:1fr 70px}.funnel .tr{grid-column:1/-1;order:3}}
+.hbar{display:grid;grid-template-columns:minmax(90px,40%) 1fr 48px;gap:10px;align-items:center;padding:4px 0;font-size:13px}
+.hbar .t{height:8px;background:var(--mist);border-radius:4px;overflow:hidden}.hbar .f{height:100%;background:var(--slate)}
+.hbar .k{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+svg.chart{width:100%;height:auto;display:block}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px;flex-wrap:wrap}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.empty{padding:26px;text-align:center;color:var(--muted)}
+.load{padding:40px;text-align:center;color:var(--muted)}
+/* login */
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.login .card{width:100%;max-width:380px;padding:30px}
+.login input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin:6px 0 12px;background:#fff}
+.login .btn{width:100%;padding:11px;margin-top:4px}
+.err{color:var(--bad);font-size:13px;min-height:18px;margin-top:10px}
+/* detail */
+.back{margin-bottom:14px}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.photos a{display:block;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--mist);position:relative}
+.photos img{width:100%;height:100%;object-fit:cover;display:block}
+.photos span{position:absolute;left:6px;bottom:6px;font-size:10.5px;background:rgba(22,25,29,.7);color:#fff;padding:2px 6px;border-radius:6px;max-width:calc(100% - 12px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+dl.kv{display:grid;grid-template-columns:minmax(110px,38%) 1fr;gap:6px 14px;margin:0;font-size:13px}
+dl.kv dt{color:var(--muted)}dl.kv dd{margin:0;word-break:break-word}
+.chat{max-height:420px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.msg{padding:9px 12px;border-radius:12px;max-width:85%;font-size:13px;white-space:pre-wrap}
+.msg.u{background:var(--deep);color:#fff;align-self:flex-end}.msg.a{background:var(--mist)}
+.sec{margin-top:14px}
+pre.j{white-space:pre-wrap;word-break:break-word;font:12px/1.5 var(--mono);background:#F8F7F3;border-radius:10px;padding:12px;max-height:380px;overflow:auto;margin:0}
+details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
+.lightbox{position:fixed;inset:0;background:rgba(10,12,14,.9);z-index:50;display:grid;place-items:center;padding:20px}
+.lightbox img{max-width:100%;max-height:92vh;border-radius:10px}
+@media(max-width:600px){.wrap{padding:0 14px}.kpis{gap:10px}.kpi .v{font-size:20px}.kpi .s{font-size:11.5px}.card{padding:14px}.bar .who{display:none}}
+</style>
+</head>
+<body>
+<div id="login" class="login hide">
+  <div class="card">
+    <p class="logo" style="margin:0 0 4px">resalta<small>admin</small></p>
+    <p class="mut" style="margin:0 0 20px">Solo para cuentas de administrador.</p>
+    <button class="btn" id="google" type="button">Entrar con Google</button>
+    <p class="mut" style="text-align:center;margin:16px 0 8px;font-size:12px">o con correo</p>
+    <form id="fl">
+      <label>Correo<input type="email" id="em" autocomplete="username" required></label>
+      <label>Contraseña<input type="password" id="pw" autocomplete="current-password" required></label>
+      <button class="btn p" type="submit">Entrar</button>
+    </form>
+    <div class="err" id="lerr"></div>
+  </div>
+</div>
+
+<div id="app" class="hide">
+  <header class="top"><div class="wrap">
+    <div class="bar">
+      <span class="logo">resalta<small>admin</small></span>
+      <span class="sp"></span>
+      <select class="btn" id="rango" aria-label="Periodo">
+        <option value="1">Hoy</option><option value="7">7 días</option><option value="30" selected>30 días</option><option value="90">90 días</option><option value="365">12 meses</option>
+      </select>
+      <span class="mut who" id="who"></span>
+      <button class="btn" id="salir" type="button">Salir</button>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-v="resumen" class="on">Resumen</button><button data-v="analitica">Analítica</button><button data-v="usuarios">Usuarios</button>
+      <button data-v="pedidos">Pedidos</button><button data-v="leads">Leads</button><button data-v="afiliados">Afiliados</button><button data-v="eventos">Eventos en vivo</button>
+    </nav>
+  </div></header>
+  <main class="wrap" id="main"><div class="load">Cargando…</div></main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+"use strict";
+const URL_SB="https://jxluabbugwdonqchbaxm.supabase.co", KEY="sb_publishable_WPce-iugGd2zyglAsGfnLQ_nR-JUXYI";
+const sb=window.supabase.createClient(URL_SB,KEY,{auth:{storageKey:"resalta-admin"}});
+const $=s=>document.querySelector(s), main=$("#main");
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const mxn=n=>"$"+Math.round(n||0).toLocaleString("es-MX");
+const num=n=>(n||0).toLocaleString("es-MX");
+const pct=(a,b)=>b?((a/b)*100).toFixed(a/b<.1?1:0)+"%":"–";
+const fecha=t=>t?new Date(t).toLocaleString("es-MX",{timeZone:"America/Mexico_City",day:"2-digit",month:"short",year:"2-digit",hour:"2-digit",minute:"2-digit"}):"–";
+const dia=t=>t?new Date(t).toLocaleDateString("es-MX",{timeZone:"America/Mexico_City",day:"2-digit",month:"short"}):"–";
+const hace=t=>{if(!t)return"–";const s=(Date.now()-new Date(t))/1e3;if(s<60)return"ahora";if(s<3600)return Math.floor(s/60)+" min";if(s<86400)return Math.floor(s/3600)+" h";return Math.floor(s/86400)+" d";};
+const EST={pagado:"ok",listo:"ok",borrador:"",active:"ok",trialing:"ok",canceled:"bad",past_due:"warn",incomplete:"warn",error:"bad",generando:"warn"};
+const pill=(t,k)=>t?`<span class="pill ${k!=null?k:(EST[t]||"")}">${esc(t)}</span>`:`<span class="mut">–</span>`;
+const plan=t=>t==="hard"?"Completo":t==="soft"?"Esencial":t;
+const EVN={page_view:"Vista",generate_lead:"Lead",sign_up:"Registro",begin_checkout:"Inicio de pago",purchase:"Compra",afiliado_alta:"Alta afiliado",afiliado_registro:"Registro afiliado"};
+
+async function api(accion,extra){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session) throw Object.assign(new Error("sesion"),{code:401});
+  const r=await fetch(URL_SB+"/functions/v1/admin",{method:"POST",headers:{"Content-Type":"application/json",apikey:KEY,Authorization:"Bearer "+session.access_token},body:JSON.stringify({accion,...(extra||{})})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw Object.assign(new Error(j.error||"Error"),{code:r.status});
+  return j;
+}
+
+// ---------- auth ----------
+async function arrancar(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){ mostrarLogin(); return; }
+  try{ const yo=await api("yo"); $("#who").textContent=yo.email; $("#login").classList.add("hide"); $("#app").classList.remove("hide"); ir(location.hash.slice(1)||"resumen"); }
+  catch(e){ mostrarLogin(e.code===403?"Esta cuenta no tiene acceso de administrador.":e.code===401?"":"No se pudo verificar tu acceso."); if(e.code===403) await sb.auth.signOut(); }
+}
+function mostrarLogin(msg){ $("#app").classList.add("hide"); $("#login").classList.remove("hide"); $("#lerr").textContent=msg||""; }
+$("#google").onclick=()=>sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+"/"}});
+$("#fl").onsubmit=async e=>{e.preventDefault();$("#lerr").textContent="";const {error}=await sb.auth.signInWithPassword({email:$("#em").value.trim(),password:$("#pw").value});if(error){$("#lerr").textContent="Correo o contraseña incorrectos.";return;}arrancar();};
+$("#salir").onclick=async()=>{await sb.auth.signOut();location.hash="";mostrarLogin();};
+sb.auth.onAuthStateChange((ev)=>{ if(ev==="SIGNED_IN"&&$("#app").classList.contains("hide")) arrancar(); });
+
+// ---------- navigation ----------
+let vista="resumen";
+const dias=()=>Number($("#rango").value);
+$("#rango").onchange=()=>ir(vista);
+$("#tabs").onclick=e=>{const b=e.target.closest("button[data-v]");if(b)ir(b.dataset.v);};
+window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(h&&h!==vista)ir(h,true);});
+async function ir(v,desdeHash){
+  const [base,arg]=v.split("/");
+  vista=v; if(!desdeHash&&location.hash.slice(1)!==v) location.hash=v;
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===base||(base==="usuario"&&b.dataset.v==="usuarios")));
+  $("#rango").classList.toggle("hide",!["resumen","analitica"].includes(base));
+  main.innerHTML='<div class="load">Cargando…</div>'; window.scrollTo(0,0);
+  try{
+    if(base==="resumen") await vResumen();
+    else if(base==="analitica") await vAnalitica();
+    else if(base==="usuarios") await vUsuarios();
+    else if(base==="usuario") await vUsuario(arg);
+    else if(base==="pedidos") await vPedidos();
+    else if(base==="leads") await vLeads();
+    else if(base==="afiliados") await vAfiliados();
+    else if(base==="eventos") await vEventos();
+    else await vResumen();
+  }catch(e){ if(e.code===401||e.code===403){mostrarLogin(e.code===403?"Esta cuenta no tiene acceso.":"Tu sesión terminó. Entra de nuevo.");return;} main.innerHTML=`<div class="card empty">No se pudo cargar: ${esc(e.message)}</div>`; }
+}
+
+// ---------- charts (plain SVG) ----------
+function lineas(serie,claves,{alto=220}={}){
+  const ang=window.innerWidth<640, W=ang?380:720,H=ang?Math.round(alto*.75):alto,P={l:ang?34:38,r:8,t:12,b:26}, n=serie.length;
+  if(!n) return '<div class="empty">Sin datos</div>';
+  const max=Math.max(1,...serie.flatMap(d=>claves.map(c=>d[c.k]||0)));
+  const tope=Math.ceil(max/Math.pow(10,Math.floor(Math.log10(max))))*Math.pow(10,Math.floor(Math.log10(max)));
+  const x=i=>P.l+(n===1?(W-P.l-P.r)/2:i*(W-P.l-P.r)/(n-1)), y=v=>H-P.b-(v/tope)*(H-P.t-P.b);
+  let g="";
+  for(let i=0;i<=4;i++){const v=tope*i/4,yy=y(v);g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${yy}" y2="${yy}" stroke="#E3E7EA"/><text x="${P.l-6}" y="${yy+4}" text-anchor="end" font-size="10.5" fill="#5B6470" font-family="JetBrains Mono">${Math.round(v).toLocaleString("es-MX")}</text>`;}
+  const paso=Math.max(1,Math.ceil(n/(ang?5:8)));
+  serie.forEach((d,i)=>{if(i%paso===0||i===n-1)g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="10.5" fill="#5B6470">${esc(d.dia.slice(8,10)+"/"+d.dia.slice(5,7))}</text>`;});
+  claves.forEach(c=>{
+    if(c.barra){const bw=Math.max(2,(W-P.l-P.r)/n*.55);serie.forEach((d,i)=>{const v=d[c.k]||0;if(v)g+=`<rect x="${x(i)-bw/2}" y="${y(v)}" width="${bw}" height="${H-P.b-y(v)}" rx="2" fill="${c.c}"><title>${esc(d.dia)}: ${v}</title></rect>`;});}
+    else{const pts=serie.map((d,i)=>`${x(i)},${y(d[c.k]||0)}`).join(" ");g+=`<polyline points="${pts}" fill="none" stroke="${c.c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      if(n<=40) serie.forEach((d,i)=>{g+=`<circle cx="${x(i)}" cy="${y(d[c.k]||0)}" r="2.6" fill="${c.c}"><title>${esc(d.dia)}: ${d[c.k]||0}</title></circle>`;});}
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${g}</svg><div class="legend">${claves.map(c=>`<span><i style="background:${c.c}"></i>${esc(c.n)}</span>`).join("")}</div>`;
+}
+function barrasH(pares,{total,max=10,extra}={}){
+  if(!pares||!pares.length) return '<div class="empty">Sin datos todavía</div>';
+  const tope=Math.max(...pares.map(p=>p[1]))||1, t=total||pares.reduce((s,p)=>s+p[1],0);
+  return pares.slice(0,max).map(p=>`<div class="hbar"><span class="k" title="${esc(p[0])}">${esc(p[0])}</span><span class="t"><span class="f" style="width:${(p[1]/tope*100).toFixed(1)}%;display:block"></span></span><span class="mono" style="text-align:right">${num(p[1])}${extra?extra(p):""}</span></div>`).join("")+`<p class="mut" style="font-size:11.5px;margin:6px 0 0">Total ${num(t)}</p>`;
+}
+const tabla=(cols,filas,{click}={})=>filas.length?`<div class="tbl"><table><thead><tr>${cols.map(c=>`<th class="${c.n?"n":""}">${esc(c.t)}</th>`).join("")}</tr></thead><tbody>${filas.map(f=>`<tr${click?` class="click" data-go="${esc(click(f))}"`:""}>${cols.map(c=>`<td class="${c.n?"n":""}">${c.f(f)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`:'<div class="empty">No hay registros</div>';
+main.addEventListener("click",e=>{const tr=e.target.closest("tr[data-go]");if(tr&&!e.target.closest("a")) ir(tr.dataset.go);const ph=e.target.closest(".photos a");if(ph){e.preventDefault();const lb=document.createElement("div");lb.className="lightbox";lb.innerHTML=`<img src="${esc(ph.href)}" alt="">`;lb.onclick=()=>lb.remove();document.body.appendChild(lb);}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".lightbox").forEach(x=>x.remove());});
+function buscador(id,filas,render,campos){
+  const pinta=q=>{q=(q||"").toLowerCase().trim();const fs=q?filas.filter(f=>campos(f).join(" ").toLowerCase().includes(q)):filas;$("#"+id+"-out").innerHTML=render(fs);$("#"+id+"-n").textContent=num(fs.length)+" de "+num(filas.length);};
+  setTimeout(()=>{const i=$("#"+id);if(i){i.oninput=()=>pinta(i.value);pinta("");}},0);
+  return `<div class="row"><input class="search" id="${id}" placeholder="Buscar…" autocomplete="off"><span class="mut" id="${id}-n"></span></div><div id="${id}-out"></div>`;
+}
+
+// ---------- views ----------
+let cache={};
+async function datosResumen(){const d=dias();if(!cache.res||cache.res.dias!==d||Date.now()-cache.res.t>60e3){const r=await api("resumen",{dias:d});cache.res={...r,t:Date.now()};}return cache.res;}
+const etiquetaRango=()=>$("#rango").selectedOptions[0].textContent.toLowerCase();
+
+async function vResumen(){
+  const r=await datosResumen(), k=r.kpis, e=r.embudo;
+  const card=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
+  main.innerHTML=`<h2>Resumen <span class="mut" style="font-size:15px">· ${esc(etiquetaRango())}</span></h2>
+  <div class="grid kpis">
+    ${card("Ingresos",mxn(k.ingresos_rango_mxn),`Total histórico ${mxn(k.ingresos_mxn)} MXN`)}
+    ${card("Compras",num(k.compras_rango),`${num(k.esencial)} Esencial · ${num(k.completo)} Completo (total)`)}
+    ${card("Visitantes únicos",num(k.visitantes),`${num(k.vistas)} páginas vistas · ${num(k.sesiones)} sesiones`)}
+    ${card("Conversión",pct(e[5].n,e[0].n),"De visitante a compra")}
+    ${card("Leads (calificación gratis)",num(k.leads_rango),`${num(k.leads)} en total`)}
+    ${card("Cuentas nuevas",num(k.usuarios_rango),`${num(k.usuarios)} en total`)}
+    ${card("Suscripciones activas",num(k.suscripciones_activas),`MRR aprox. ${mxn(k.mrr_mxn)} · ${num(k.suscripciones_canceladas)} canceladas`)}
+    ${card("Ticket promedio",k.compras?mxn(k.ingresos_mxn/k.compras):"–",`${num(k.borradores)} pedidos sin pagar`)}
+    ${card("Reportes",num(k.reportes_listos),k.reportes_error?`<span style="color:var(--bad)">${num(k.reportes_error)} con error</span>`:"Sin errores")}
+    ${card("Afiliados",num(k.afiliados),`${num(k.clics_afiliados)} clics · ${mxn(k.comisiones_pendientes_mxn)} por pagar`)}
+  </div>
+  <div class="grid two sec">
+    <div class="card"><h3>Visitantes y leads por día</h3>${lineas(r.serie,[{k:"visitantes",n:"Visitantes",c:"#4A5866"},{k:"leads",n:"Leads",c:"#C8B48E"},{k:"registros",n:"Cuentas",c:"#9DAAB6"}])}</div>
+    <div class="card"><h3>Ingresos por día (MXN)</h3>${lineas(r.serie,[{k:"ingresos",n:"Ingresos",c:"#4A5866",barra:true}])}</div>
+  </div>
+  <div class="grid two sec">
+    <div class="card funnel"><h3>Embudo</h3>${e.map((s,i)=>`<div class="st"><span>${esc(s.paso)}</span><span class="tr"><span class="fl" style="display:block;width:${e[0].n?Math.max(1.5,s.n/e[0].n*100):0}%"></span></span><span class="pc">${num(s.n)}${i?` <span class="mut">${pct(s.n,e[0].n)}</span>`:""}</span></div>`).join("")}
+      <p class="mut" style="font-size:12px;margin:10px 0 0">Personas únicas en el periodo. El porcentaje es contra el total de visitantes.</p></div>
+    <div class="card"><h3>De dónde llegan</h3>${tabla([{t:"Fuente",f:x=>esc(x.fuente)},{t:"Visitantes",n:1,f:x=>num(x.visitantes)},{t:"Compras",n:1,f:x=>num(x.compras)},{t:"Conv.",n:1,f:x=>pct(x.compras,x.visitantes)}],r.fuentes)}</div>
+  </div>`;
+}
+
+async function vAnalitica(){
+  const r=await datosResumen();
+  main.innerHTML=`<h2>Analítica del sitio <span class="mut" style="font-size:15px">· ${esc(etiquetaRango())}</span></h2>
+  <div class="card"><h3>Tráfico diario</h3>${lineas(r.serie,[{k:"vistas",n:"Páginas vistas",c:"#9DAAB6"},{k:"visitantes",n:"Visitantes únicos",c:"#4A5866"}],{alto:240})}</div>
+  <div class="grid two sec">
+    <div class="card"><h3>Leads, cuentas y compras por día</h3>${lineas(r.serie,[{k:"leads",n:"Leads",c:"#C8B48E"},{k:"registros",n:"Cuentas",c:"#9DAAB6"},{k:"compras",n:"Compras",c:"#4A5866"}])}</div>
+    <div class="card"><h3>Páginas más vistas</h3>${barrasH(r.paginas,{max:12})}</div>
+  </div>
+  <div class="grid three sec">
+    <div class="card"><h3>Fuentes de tráfico</h3>${barrasH(r.fuentes.map(f=>[f.fuente,f.visitantes]))}</div>
+    <div class="card"><h3>Campañas (utm_campaign)</h3>${barrasH(r.campanas)}</div>
+    <div class="card"><h3>Dispositivo</h3>${barrasH(r.dispositivos)}</div>
+  </div>
+  <div class="grid two sec">
+    <div class="card"><h3>País (por zona horaria)</h3>${barrasH(r.paises,{max:15})}</div>
+    <div class="card"><h3>Sobre estos datos</h3><p class="mut" style="margin:0;font-size:13px;line-height:1.6">La analítica se registra en tu propia base de datos desde cada página del sitio: visitante anónimo, sesión, campaña (utm, fbclid, gclid, ttclid), dispositivo y país aproximado por zona horaria. No depende de cookies de terceros, así que la ven también quienes bloquean Google Analytics. Empieza a contar desde que se activó (14 de noviembre de 2026).</p></div>
+  </div>`;
+}
+
+async function vUsuarios(){
+  const {usuarios}=await api("usuarios");
+  const reales=usuarios.filter(u=>!u.anonimo);
+  main.innerHTML=`<h2>Usuarios</h2><div class="card">${buscador("qu",usuarios,fs=>tabla([
+    {t:"Usuario",f:u=>`<b style="font-weight:500">${esc(u.nombre||u.nombre_form||"Sin nombre")}</b><br><span class="mut">${esc(u.email||(u.anonimo?"Anónimo (sin correo)":"–"))}</span>`},
+    {t:"Plan",f:u=>u.plan?pill(u.plan,"d"):`<span class="mut">${u.pedidos?"Sin pagar":"–"}</span>`},
+    {t:"Pagado",n:1,f:u=>u.pagado_mxn?mxn(u.pagado_mxn):"–"},
+    {t:"Suscripción",f:u=>pill(u.suscripcion)},
+    {t:"Puntaje gratis",n:1,f:u=>u.puntaje_gratis!=null?u.puntaje_gratis:"–"},
+    {t:"País",f:u=>esc(u.pais||"–")},
+    {t:"Entrada",f:u=>esc(u.proveedor||"–")},
+    {t:"Alta",n:1,f:u=>dia(u.creado)},{t:"Último acceso",n:1,f:u=>hace(u.ultimo)}
+  ],fs,{click:u=>"usuario/"+u.id}),u=>[u.email,u.nombre,u.nombre_form,u.plan,u.pais,u.suscripcion])}</div>
+  <p class="mut" style="font-size:12px">${num(reales.length)} con cuenta · ${num(usuarios.length-reales.length)} sesiones anónimas (empezaron el formulario sin correo).</p>`;
+}
+
+async function vUsuario(id){
+  const d=await api("usuario",{id}), u=d.usuario;
+  const kv=o=>`<dl class="kv">${Object.entries(o).filter(([,v])=>v!==null&&v!==undefined&&v!=="").map(([k,v])=>`<dt>${esc(k)}</dt><dd>${typeof v==="object"?`<code class="mono" style="font-size:12px">${esc(JSON.stringify(v))}</code>`:esc(v)}</dd>`).join("")}</dl>`;
+  const nombreFoto=r=>{const p=r.split("/");return p.slice(1).join(" / ");};
+  const pedidos=d.pedidos.map(o=>{
+    const rp=d.reportes.find(r=>r.order_id===o.id);
+    const pz=rp&&rp.puntajes;
+    return `<div class="card sec"><div class="row" style="margin:0 0 10px"><b style="font-weight:500">Pedido ${esc(o.id.slice(0,8))}</b>${pill(o.status)}${o.tier?pill(plan(o.tier),"d"):""}<span class="mut">${o.amount_mxn?mxn(o.amount_mxn)+" MXN":""}</span><span class="sp"></span><span class="mut">Creado ${fecha(o.created_at)}${o.paid_at?` · Pagado ${fecha(o.paid_at)}`:""}${o.delivered_at?` · Entregado ${fecha(o.delivered_at)}`:""}</span></div>
+      <div class="grid two">
+        <div><h3>Respuestas del onboarding</h3>${o.answers?kv(o.answers):'<p class="mut">Sin respuestas</p>'}</div>
+        <div><h3>Reporte</h3>${rp?`<p style="margin:0 0 8px">${pill(rp.estado||"listo")} ${rp.generado?`<span class="mut">${fecha(rp.generado)}${rp.segundos?` · ${rp.segundos} s`:""}</span>`:""}${rp.motivo?` <span class="pill bad">${esc(rp.motivo)}</span>`:""}</p>
+          ${pz?`<dl class="kv">${Object.entries(pz).map(([k,v])=>`<dt>${esc(k)}</dt><dd class="mono">${v==null?"–":esc(v)}</dd>`).join("")}</dl>`:""}
+          ${rp.arquetipo?`<p style="margin:10px 0 0"><b style="font-weight:500">${esc(rp.arquetipo.nombre)}</b> <span class="mut">${esc(rp.arquetipo.texto||"")}</span></p>`:""}
+          ${rp.resumen?`<p class="mut" style="margin:8px 0 0">${esc(rp.resumen)}</p>`:""}
+          ${rp.grupos&&rp.grupos.length?`<details><summary>Puntaje por grupo</summary><dl class="kv">${rp.grupos.map(g=>`<dt>${esc(g.titulo)}</dt><dd class="mono">${esc(g.puntaje)}</dd>`).join("")}</dl></details>`:""}
+          ${rp.prioridades?`<details><summary>Prioridades y fortalezas</summary><pre class="j">${esc(JSON.stringify({prioridades:rp.prioridades,fortalezas:rp.fortalezas,longevidad:rp.longevidad,potencial:rp.potencial},null,2))}</pre></details>`:""}`:'<p class="mut">Todavía no se genera</p>'}
+          ${o.medidas?`<details><summary>Medidas (${o.medidas.n})</summary><pre class="j">${esc(JSON.stringify(o.medidas,null,2))}</pre></details>`:""}
+        </div>
+      </div></div>`;}).join("");
+  const fis=d.fisico.map(f=>`<div class="card sec"><div class="row" style="margin:0 0 10px"><b style="font-weight:500">Seguimiento físico</b>${pill(f.estado)}<span class="mut">${fecha(f.created_at)}${f.peso_kg?` · ${esc(f.peso_kg)} kg`:""}</span></div>
+    <div class="grid two"><div><h3>Datos</h3>${kv(f.datos||{})}</div><div><h3>Plan</h3>${f.plan?`<p class="mut" style="margin:0 0 8px">${esc(f.plan.resumen||"")}</p><details><summary>Ver plan completo</summary><pre class="j">${esc(JSON.stringify(f.plan,null,2))}</pre></details>`:'<p class="mut">Sin plan todavía</p>'}</div></div></div>`).join("");
+  main.innerHTML=`<button class="btn back" onclick="history.back()">← Usuarios</button>
+  <h2>${esc(u.nombre||"Sin nombre")} <span class="mut" style="font-size:15px">${esc(u.email||"anónimo")}</span></h2>
+  <div class="grid three">
+    <div class="card"><h3>Cuenta</h3>${kv({"ID":u.id,"Entró con":u.proveedor,"Alta":fecha(u.creado),"Último acceso":fecha(u.ultimo),"Correo confirmado":u.confirmado?fecha(u.confirmado):"No","Tipo":u.tipo})}</div>
+    <div class="card"><h3>Suscripción</h3>${d.suscripcion?kv({"Estado":d.suscripcion.estado,"Periodo hasta":fecha(d.suscripcion.periodo_fin),"Cancela al final":d.suscripcion.cancela?"Sí":"No","Cliente Stripe":d.suscripcion.stripe_customer}):'<p class="mut">Sin suscripción</p>'}</div>
+    <div class="card"><h3>Calificación gratis</h3>${d.leads.length?d.leads.map(l=>`<p style="margin:0 0 6px"><span class="mono" style="font-size:20px">${esc(l.score??"–")}</span> <span class="mut">/100 · ${fecha(l.created_at)} · ${l.enviado_at?"correo enviado":"correo pendiente"}</span></p>`).join(""):'<p class="mut">No la hizo con este correo</p>'}
+      ${d.afiliado?`<h3 style="margin-top:14px">Afiliado</h3>${kv({"Código":d.afiliado.codigo,"Activo":d.afiliado.activo?"Sí":"No","Clics":d.afiliado.clics,"Comisión":d.afiliado.comision_pct+"%"})}`:""}</div>
+  </div>
+  <div class="card sec"><h3>Fotos (${d.fotos.length})</h3>${d.fotos.length?`<div class="photos">${d.fotos.map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${esc(f.url)}" loading="lazy" alt=""><span>${esc(nombreFoto(f.ruta))}</span></a>`).join("")}</div><p class="mut" style="font-size:11.5px;margin:8px 0 0">Los enlaces caducan en una hora.</p>`:'<p class="mut" style="margin:0">No tiene fotos guardadas (o las borró).</p>'}</div>
+  ${pedidos||'<div class="card sec empty">Sin pedidos</div>'}
+  ${fis}
+  ${d.chat.length?`<div class="card sec"><h3>Chat con el asistente (${d.chat.length})</h3><div class="chat">${d.chat.map(m=>`<div class="msg ${m.rol==="user"?"u":"a"}">${esc(m.texto)}</div>`).join("")}</div></div>`:""}
+  <div class="card sec"><h3>Actividad en el sitio (${d.eventos.length})</h3>${tabla([{t:"Cuándo",f:e=>fecha(e.ts)},{t:"Evento",f:e=>esc(EVN[e.nombre]||e.nombre)},{t:"Página",f:e=>esc(e.path)},{t:"Fuente",f:e=>esc(e.utm_source||e.ref||"–")},{t:"Campaña",f:e=>esc(e.utm_campaign||"–")},{t:"Disp.",f:e=>esc(e.dispositivo||"")}],d.eventos.slice(0,150))}</div>
+  <details class="sec"><summary>Metadata de la cuenta</summary><pre class="j">${esc(JSON.stringify(u.metadata,null,2))}</pre></details>`;
+}
+
+async function vPedidos(){
+  const {pedidos}=await api("pedidos");
+  main.innerHTML=`<h2>Pedidos</h2><div class="card">${buscador("qp",pedidos,fs=>tabla([
+    {t:"Pedido",f:o=>`<span class="mono">${esc(o.id.slice(0,8))}</span>`},{t:"Cliente",f:o=>`${esc(o.nombre||"")}<br><span class="mut">${esc(o.email||"–")}</span>`},
+    {t:"Estado",f:o=>pill(o.status)},{t:"Plan",f:o=>o.tier?esc(plan(o.tier)):"–"},{t:"Monto",n:1,f:o=>o.amount_mxn?mxn(o.amount_mxn):"–"},
+    {t:"Origen",f:o=>esc(o.origen||"–")},{t:"Afiliado",f:o=>o.afiliado_id?"Sí":"–"},{t:"Creado",n:1,f:o=>fecha(o.created_at)},{t:"Pagado",n:1,f:o=>fecha(o.paid_at)}
+  ],fs,{click:o=>"usuario/"+o.user_id}),o=>[o.id,o.email,o.nombre,o.status,o.tier,o.origen])}</div>`;
+}
+
+async function vLeads(){
+  const {leads}=await api("leads");
+  main.innerHTML=`<h2>Leads</h2><div class="card">${buscador("ql",leads,fs=>tabla([
+    {t:"Nombre",f:l=>esc(l.nombre||"–")},{t:"Correo",f:l=>esc(l.email)},{t:"Origen",f:l=>esc(l.source||"–")},{t:"Puntaje",n:1,f:l=>l.score!=null?l.score:"–"},
+    {t:"Correo de resultado",f:l=>l.source==="calificacion"?(l.enviado_at?pill("Enviado","ok"):pill("Pendiente","warn")):"–"},{t:"Fecha",n:1,f:l=>fecha(l.created_at)}
+  ],fs),l=>[l.email,l.nombre,l.source])}</div>`;
+}
+
+async function vAfiliados(){
+  const {afiliados}=await api("afiliados");
+  main.innerHTML=`<h2>Afiliados</h2><div class="card">${tabla([
+    {t:"Afiliado",f:a=>`${esc(a.nombre||"")}<br><span class="mut">${esc(a.email||"–")}</span>`},{t:"Código",f:a=>`<span class="mono">${esc(a.codigo)}</span>`},
+    {t:"Estado",f:a=>a.activo?pill("Activo","ok"):pill("Inactivo")},{t:"Clics",n:1,f:a=>num(a.clics)},{t:"Ventas",n:1,f:a=>num(a.ventas)},
+    {t:"Conv.",n:1,f:a=>pct(a.ventas,a.clics)},{t:"Ganado",n:1,f:a=>mxn(a.ganado_mxn)},{t:"Por pagar",n:1,f:a=>mxn(a.pendiente_mxn)},{t:"Comisión",n:1,f:a=>esc(a.comision_pct)+"%"},{t:"Alta",n:1,f:a=>dia(a.created_at)}
+  ],afiliados,{click:a=>"usuario/"+a.user_id})}</div>`;
+}
+
+let vivo=null;
+async function vEventos(){
+  clearInterval(vivo);
+  const pinta=async()=>{
+    if(vista!=="eventos"){clearInterval(vivo);return;}
+    const {eventos}=await api("eventos",{limite:300});
+    const out=$("#ev-out"); if(!out) return;
+    out.innerHTML=tabla([{t:"Cuándo",f:e=>`${fecha(e.ts)}<br><span class="mut">hace ${hace(e.ts)}</span>`},{t:"Evento",f:e=>e.nombre==="purchase"?pill("Compra","ok"):e.nombre==="page_view"?esc("Vista"):pill(EVN[e.nombre]||e.nombre,"d")},
+      {t:"Página",f:e=>esc(e.path)},{t:"Fuente",f:e=>esc(e.utm_source||(e.ref?e.ref.replace(/^https?:\/\/(www\.)?/,"").split("/")[0]:"directo"))},{t:"Campaña",f:e=>esc(e.utm_campaign||"–")},
+      {t:"Visitante",f:e=>`<span class="mono mut">${esc((e.vid||"").slice(0,6))}</span>${e.user_id?` <a href="#usuario/${esc(e.user_id)}">cuenta</a>`:""}`},{t:"Disp.",f:e=>esc(e.dispositivo||"")},{t:"País",f:e=>esc(e.pais||"–")}],eventos);
+  };
+  main.innerHTML=`<h2>Eventos en vivo</h2><p class="mut" style="margin:-6px 0 14px">Los últimos 300 eventos del sitio. Se actualiza cada 20 segundos.</p><div class="card" id="ev-out"><div class="load">Cargando…</div></div>`;
+  await pinta(); vivo=setInterval(pinta,20000);
+}
+
+arrancar();
+})();
+</script>
+</body>
+</html>
