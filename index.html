@@ -22,11 +22,11 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(243,241,236,.92);bac
 .btn{border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap}
 .btn:hover{border-color:var(--slate)}.btn.p{background:var(--deep);border-color:var(--deep);color:#fff}
 select.btn{padding-right:28px;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;background-size:5px 5px;background-repeat:no-repeat}
-nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:0 0 10px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:2px 0 12px;scroll-padding:0 20px}
 nav.tabs::-webkit-scrollbar{display:none}
 nav.tabs button{border:0;background:none;padding:7px 13px;border-radius:999px;color:var(--muted);cursor:pointer;white-space:nowrap}
 nav.tabs button.on{background:var(--ink);color:#fff}
-main{padding:22px 0 60px}
+main.wrap{padding-top:28px;padding-bottom:60px}
 h2{font-size:22px;font-weight:400;margin:0 0 14px;letter-spacing:-.01em}
 h3{font-size:13px;font-weight:500;margin:0 0 12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .card{background:var(--raised);border:1px solid var(--line);border-radius:var(--r);padding:18px}
@@ -65,7 +65,8 @@ svg.chart{width:100%;height:auto;display:block}
 .login .btn{width:100%;padding:11px;margin-top:4px}
 .err{color:var(--bad);font-size:13px;min-height:18px;margin-top:10px}
 /* detail */
-.back{margin-bottom:14px}
+.back{display:inline-flex;align-items:center;gap:6px;margin:0 0 20px}
+.h-user{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:18px}.h-user .mut{font-size:15px;word-break:break-all}
 .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
 .photos a{display:block;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--mist);position:relative}
 .photos img{width:100%;height:100%;object-fit:cover;display:block}
@@ -84,7 +85,7 @@ details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
 .gen select,.gen input{width:100%;margin-top:4px;border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff}
 .out{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}.out code{flex:1;min-width:0;overflow-wrap:anywhere;font:12.5px/1.4 var(--mono);background:#F8F7F3;border-radius:10px;padding:10px 12px}
 @media(max-width:900px){.gen{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.wrap{padding:0 14px}.kpis{gap:10px}.kpi .v{font-size:20px}.kpi .s{font-size:11.5px}.card{padding:14px}.bar .who{display:none}}
+@media(max-width:600px){.wrap{padding:0 14px}.kpis{gap:10px}.kpi .v{font-size:20px}.kpi .s{font-size:11.5px}.card{padding:14px}.bar .who{display:none}main.wrap{padding-top:24px}.h-user .mut{font-size:13.5px}nav.tabs{margin:0 -14px;padding-left:14px;padding-right:14px}}
 .ed label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px}
 .ed input,.ed textarea{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 12px}
 .ed textarea{min-height:420px;font:13px/1.55 var(--mono);resize:vertical}
@@ -181,6 +182,7 @@ async function ir(v,desdeHash){
   const [base,arg]=v.split("/");
   vista=v; if(!desdeHash&&location.hash.slice(1)!==v) location.hash=v;
   document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===base||(base==="usuario"&&b.dataset.v==="usuarios")));
+  const act=$("#tabs button.on"); if(act){const n=$("#tabs");n.scrollTo({left:Math.max(0,act.offsetLeft-n.offsetLeft-14),behavior:"smooth"});}
   $("#rango").classList.toggle("hide",!["resumen","analitica","enlaces","diagnostico"].includes(base));
   main.innerHTML='<div class="load">Cargando…</div>'; window.scrollTo(0,0);
   try{
@@ -356,7 +358,7 @@ async function vUsuario(id){
   const fis=d.fisico.map(f=>`<div class="card sec"><div class="row" style="margin:0 0 10px"><b style="font-weight:500">Seguimiento físico</b>${pill(f.estado)}<span class="mut">${fecha(f.created_at)}${f.peso_kg?` · ${esc(f.peso_kg)} kg`:""}</span></div>
     <div class="grid two"><div><h3>Datos</h3>${kv(f.datos||{})}</div><div><h3>Plan</h3>${f.plan?`<p class="mut" style="margin:0 0 8px">${esc(f.plan.resumen||"")}</p><details><summary>Ver plan completo</summary><pre class="j">${esc(JSON.stringify(f.plan,null,2))}</pre></details>`:'<p class="mut">Sin plan todavía</p>'}</div></div></div>`).join("");
   main.innerHTML=`<button class="btn back" onclick="history.back()">← Usuarios</button>
-  <h2>${esc(u.nombre||"Sin nombre")} <span class="mut" style="font-size:15px">${esc(u.email||"anónimo")}</span></h2>
+  <h2 class="h-user"><span>${esc(u.nombre||"Sin nombre")}</span><span class="mut">${esc(u.email||"anónimo")}</span></h2>
   <div class="grid three">
     <div class="card"><h3>Cuenta</h3>${kv({"ID":u.id,"Entró con":u.proveedor,"Alta":fecha(u.creado),"Último acceso":fecha(u.ultimo),"Correo confirmado":u.confirmado?fecha(u.confirmado):"No","Tipo":u.tipo})}</div>
     <div class="card"><h3>Suscripción</h3>${d.suscripcion?kv({"Estado":d.suscripcion.estado,"Periodo hasta":fecha(d.suscripcion.periodo_fin),"Cancela al final":d.suscripcion.cancela?"Sí":"No","Cliente Stripe":d.suscripcion.stripe_customer}):'<p class="mut">Sin suscripción</p>'}</div>
@@ -446,7 +448,7 @@ async function vSecuencias(arg){
   ${tabla([{t:"#",f:c=>c.paso},{t:"Día",n:1,f:c=>c.dias},{t:"Asunto",f:c=>`${esc(c.asunto)}${c.activo?"":` ${pill("Pausado","warn")}`}`},{t:"Enviados",n:1,f:c=>num(c.enviados)+(c.fallidos?` <span class="mut">(${c.fallidos} fallaron)</span>`:"")},{t:"Clics",n:1,f:c=>num(c.clics)},{t:"Compras",n:1,f:c=>num(c.compras)}],grupos[k],{click:c=>`secuencias/${c.secuencia}-${c.paso}`})}</div>`;}).join("")}`;
 }
 function editarCorreo(c,nombres){
-  main.innerHTML=`<div class="row"><a class="btn" href="#secuencias">← Secuencias</a><span class="mut">${esc(nombres[c.secuencia]||c.secuencia)} · correo ${c.paso} de 7</span></div>
+  main.innerHTML=`<div class="row" style="margin-bottom:20px"><a class="btn back" style="margin:0" href="#secuencias">← Secuencias</a><span class="mut">${esc(nombres[c.secuencia]||c.secuencia)} · correo ${c.paso} de 7</span></div>
   <div class="grid two"><div class="card ed">
     <label>Asunto</label><input id="e-as" maxlength="200" value="${esc(c.asunto)}">
     <label>Se envía el día (desde que dejó el onboarding)</label><input id="e-di" type="number" min="0" max="90" value="${esc(c.dias)}">
