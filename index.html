@@ -80,6 +80,10 @@ pre.j{white-space:pre-wrap;word-break:break-word;font:12px/1.5 var(--mono);backg
 details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
 .lightbox{position:fixed;inset:0;background:rgba(10,12,14,.9);z-index:50;display:grid;place-items:center;padding:20px}
 .lightbox img{max-width:100%;max-height:92vh;border-radius:10px}
+.gen{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.gen label{font-size:12px;color:var(--muted);display:block}
+.gen select,.gen input{width:100%;margin-top:4px;border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff}
+.out{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}.out code{flex:1;min-width:0;overflow-wrap:anywhere;font:12.5px/1.4 var(--mono);background:#F8F7F3;border-radius:10px;padding:10px 12px}
+@media(max-width:900px){.gen{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.wrap{padding:0 14px}.kpis{gap:10px}.kpi .v{font-size:20px}.kpi .s{font-size:11.5px}.card{padding:14px}.bar .who{display:none}}
 </style>
 </head>
@@ -111,7 +115,7 @@ details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
       <button class="btn" id="salir" type="button">Salir</button>
     </div>
     <nav class="tabs" id="tabs">
-      <button data-v="resumen" class="on">Resumen</button><button data-v="analitica">Analítica</button><button data-v="usuarios">Usuarios</button>
+      <button data-v="resumen" class="on">Resumen</button><button data-v="analitica">Analítica</button><button data-v="enlaces">Enlaces</button><button data-v="usuarios">Usuarios</button>
       <button data-v="pedidos">Pedidos</button><button data-v="leads">Leads</button><button data-v="afiliados">Afiliados</button><button data-v="eventos">Eventos en vivo</button>
     </nav>
   </div></header>
@@ -135,7 +139,7 @@ const hace=t=>{if(!t)return"–";const s=(Date.now()-new Date(t))/1e3;if(s<60)re
 const EST={pagado:"ok",listo:"ok",borrador:"",active:"ok",trialing:"ok",canceled:"bad",past_due:"warn",incomplete:"warn",error:"bad",generando:"warn"};
 const pill=(t,k)=>t?`<span class="pill ${k!=null?k:(EST[t]||"")}">${esc(t)}</span>`:`<span class="mut">–</span>`;
 const plan=t=>t==="hard"?"Completo":t==="soft"?"Esencial":t;
-const EVN={page_view:"Vista",generate_lead:"Lead",sign_up:"Registro",begin_checkout:"Inicio de pago",purchase:"Compra",afiliado_alta:"Alta afiliado",afiliado_registro:"Registro afiliado"};
+const EVN={calificacion_resultado:"Vio su resultado",page_view:"Vista",generate_lead:"Lead",sign_up:"Registro",begin_checkout:"Inicio de pago",purchase:"Compra",afiliado_alta:"Alta afiliado",afiliado_registro:"Registro afiliado"};
 
 async function api(accion,extra){
   const {data:{session}}=await sb.auth.getSession();
@@ -169,11 +173,12 @@ async function ir(v,desdeHash){
   const [base,arg]=v.split("/");
   vista=v; if(!desdeHash&&location.hash.slice(1)!==v) location.hash=v;
   document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===base||(base==="usuario"&&b.dataset.v==="usuarios")));
-  $("#rango").classList.toggle("hide",!["resumen","analitica"].includes(base));
+  $("#rango").classList.toggle("hide",!["resumen","analitica","enlaces"].includes(base));
   main.innerHTML='<div class="load">Cargando…</div>'; window.scrollTo(0,0);
   try{
     if(base==="resumen") await vResumen();
     else if(base==="analitica") await vAnalitica();
+    else if(base==="enlaces") await vEnlaces();
     else if(base==="usuarios") await vUsuarios();
     else if(base==="usuario") await vUsuario(arg);
     else if(base==="pedidos") await vPedidos();
@@ -229,7 +234,7 @@ async function vResumen(){
     ${card("Ingresos",mxn(k.ingresos_rango_mxn),`Total histórico ${mxn(k.ingresos_mxn)} MXN`)}
     ${card("Compras",num(k.compras_rango),`${num(k.esencial)} Esencial · ${num(k.completo)} Completo (total)`)}
     ${card("Visitantes únicos",num(k.visitantes),`${num(k.vistas)} páginas vistas · ${num(k.sesiones)} sesiones`)}
-    ${card("Conversión",pct(e[5].n,e[0].n),"De visitante a compra")}
+    ${card("Conversión",pct(e[e.length-1].n,e[0].n),"De visitante a compra")}
     ${card("Leads (calificación gratis)",num(k.leads_rango),`${num(k.leads)} en total`)}
     ${card("Cuentas nuevas",num(k.usuarios_rango),`${num(k.usuarios)} en total`)}
     ${card("Suscripciones activas",num(k.suscripciones_activas),`MRR aprox. ${mxn(k.mrr_mxn)} · ${num(k.suscripciones_canceladas)} canceladas`)}
@@ -265,6 +270,42 @@ async function vAnalitica(){
     <div class="card"><h3>País (por zona horaria)</h3>${barrasH(r.paises,{max:15})}</div>
     <div class="card"><h3>Sobre estos datos</h3><p class="mut" style="margin:0;font-size:13px;line-height:1.6">La analítica se registra en tu propia base de datos desde cada página del sitio: visitante anónimo, sesión, campaña (utm, fbclid, gclid, ttclid), dispositivo y país aproximado por zona horaria. No depende de cookies de terceros, así que la ven también quienes bloquean Google Analytics. Empieza a contar desde que se activó (14 de noviembre de 2026).</p></div>
   </div>`;
+}
+
+const CORTOS=[["ig","Instagram (bio)"],["tt","TikTok (bio)"],["yt","YouTube (descripción del canal)"],["fb","Facebook (bio)"],["x","X (bio)"],["wa","WhatsApp (para compartir)"]];
+const FUENTES=[["instagram","Instagram"],["tiktok","TikTok"],["youtube","YouTube"],["facebook","Facebook"],["x","X"],["whatsapp","WhatsApp"],["email","Correo"],["afiliado","Afiliado / creador"],["otro","Otro"]];
+const MEDIOS=[["video","Video / reel"],["bio","Bio"],["post","Post"],["historia","Historia"],["descripcion","Descripción"],["anuncio","Anuncio"],["mensaje","Mensaje"]];
+const DESTINOS=[["/","Inicio"],["/calificacion","Calificación gratis"],["/analisis","Análisis completo"]];
+const slug=t=>String(t||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60);
+async function vEnlaces(){
+  const r=await api("enlaces",{dias:dias()});
+  const op=a=>a.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join("");
+  main.innerHTML=`<h2>Enlaces <span class="mut" style="font-size:15px">· ${esc(etiquetaRango())}</span></h2>
+  <div class="card"><h3>Crear un link para un video o publicación</h3>
+    <div class="gen">
+      <label>Red<select id="gF">${op(FUENTES)}</select></label>
+      <label>Dónde va<select id="gM">${op(MEDIOS)}</select></label>
+      <label>Nombre (ej. mandibula-01)<input id="gC" placeholder="nombre-del-video" autocomplete="off"></label>
+      <label>A qué página<select id="gD">${op(DESTINOS)}</select></label>
+    </div>
+    <div class="out"><code id="gOut"></code><button class="btn p" id="gCopy" type="button">Copiar</button></div>
+    <p class="mut" style="font-size:12px;margin:8px 0 0">Usa un nombre distinto para cada video y así ves cuál vende. Las ventas se acreditan al primer link con el que llegó cada persona.</p>
+  </div>
+  <div class="card sec"><h3>Links cortos para tus bios</h3>
+    ${tabla([{t:"Link",f:x=>`<span class="mono">resalta.co/${esc(x[0])}</span>`},{t:"Para",f:x=>esc(x[1])},{t:"",f:x=>`<button class="btn" data-copia="https://resalta.co/${esc(x[0])}" type="button">Copiar</button>`}],CORTOS)}
+  </div>
+  <div class="card sec"><h3>Resultados por link</h3>
+    ${tabla([
+      {t:"Red",f:x=>`<b style="font-weight:500">${esc(x.fuente)}</b>`},{t:"Dónde",f:x=>esc(x.medio||"–")},{t:"Nombre",f:x=>esc(x.campana||"–")+(x.contenido?` <span class="mut">${esc(x.contenido)}</span>`:"")},
+      {t:"Clics",n:1,f:x=>num(x.clics)},{t:"Personas",n:1,f:x=>num(x.visitantes)},{t:"Calificaciones",n:1,f:x=>num(x.calificaciones)},{t:"Leads",n:1,f:x=>num(x.leads)},
+      {t:"Cuentas",n:1,f:x=>num(x.registros)},{t:"Pagos iniciados",n:1,f:x=>num(x.pagos)},{t:"Compras",n:1,f:x=>num(x.compras)},{t:"Ingresos",n:1,f:x=>x.ingresos_mxn?mxn(x.ingresos_mxn):"–"},{t:"Conv.",n:1,f:x=>pct(x.compras,x.visitantes)}
+    ],r.enlaces)}
+  </div>`;
+  const gen=()=>{const c=slug($("#gC").value)||"sin-nombre";const d=$("#gD").value;$("#gOut").textContent=`https://resalta.co${d==="/"?"/":d}?utm_source=${$("#gF").value}&utm_medium=${$("#gM").value}&utm_campaign=${c}`;};
+  ["#gF","#gM","#gC","#gD"].forEach(id=>$(id).addEventListener("input",gen)); gen();
+  const copiar=async(t,b)=>{try{await navigator.clipboard.writeText(t);}catch(e){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();document.execCommand("copy");a.remove();}const o=b.textContent;b.textContent="Copiado";setTimeout(()=>b.textContent=o,1400);};
+  $("#gCopy").onclick=e=>copiar($("#gOut").textContent,e.currentTarget);
+  main.querySelectorAll("[data-copia]").forEach(b=>b.onclick=()=>copiar(b.dataset.copia,b));
 }
 
 async function vUsuarios(){
