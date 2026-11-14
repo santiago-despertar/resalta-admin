@@ -85,6 +85,14 @@ details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
 .out{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}.out code{flex:1;min-width:0;overflow-wrap:anywhere;font:12.5px/1.4 var(--mono);background:#F8F7F3;border-radius:10px;padding:10px 12px}
 @media(max-width:900px){.gen{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.wrap{padding:0 14px}.kpis{gap:10px}.kpi .v{font-size:20px}.kpi .s{font-size:11.5px}.card{padding:14px}.bar .who{display:none}}
+.ed label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px}
+.ed input,.ed textarea{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 12px}
+.ed textarea{min-height:420px;font:13px/1.55 var(--mono);resize:vertical}
+.prev{background:#F3F1EC;border-radius:12px;padding:18px;max-height:640px;overflow:auto}
+.prev .m{background:#fff;border-radius:12px;padding:22px;max-width:520px;margin:0 auto;font:15px/1.6 Helvetica,Arial,sans-serif}
+.prev .m p{margin:0 0 12px}.prev .b{display:inline-block;background:#4A5866;color:#fff;border-radius:999px;padding:11px 22px;text-decoration:none;margin:6px 0 14px}
+.al{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--mist)}.al:last-child{border:0}
+.seq{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 </style>
 </head>
 <body>
@@ -116,7 +124,7 @@ details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
     </div>
     <nav class="tabs" id="tabs">
       <button data-v="resumen" class="on">Resumen</button><button data-v="analitica">Analítica</button><button data-v="enlaces">Enlaces</button><button data-v="usuarios">Usuarios</button>
-      <button data-v="pedidos">Pedidos</button><button data-v="leads">Leads</button><button data-v="afiliados">Afiliados</button><button data-v="eventos">Eventos en vivo</button>
+      <button data-v="pedidos">Pedidos</button><button data-v="leads">Leads</button><button data-v="afiliados">Afiliados</button><button data-v="diagnostico">Diagnóstico</button><button data-v="secuencias">Secuencias</button><button data-v="eventos">Eventos en vivo</button>
     </nav>
   </div></header>
   <main class="wrap" id="main"><div class="load">Cargando…</div></main>
@@ -173,7 +181,7 @@ async function ir(v,desdeHash){
   const [base,arg]=v.split("/");
   vista=v; if(!desdeHash&&location.hash.slice(1)!==v) location.hash=v;
   document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===base||(base==="usuario"&&b.dataset.v==="usuarios")));
-  $("#rango").classList.toggle("hide",!["resumen","analitica","enlaces"].includes(base));
+  $("#rango").classList.toggle("hide",!["resumen","analitica","enlaces","diagnostico"].includes(base));
   main.innerHTML='<div class="load">Cargando…</div>'; window.scrollTo(0,0);
   try{
     if(base==="resumen") await vResumen();
@@ -185,6 +193,8 @@ async function ir(v,desdeHash){
     else if(base==="leads") await vLeads();
     else if(base==="afiliados") await vAfiliados();
     else if(base==="eventos") await vEventos();
+    else if(base==="diagnostico") await vDiagnostico();
+    else if(base==="secuencias") await vSecuencias(arg);
     else await vResumen();
   }catch(e){ if(e.code===401||e.code===403){mostrarLogin(e.code===403?"Esta cuenta no tiene acceso.":"Tu sesión terminó. Entra de nuevo.");return;} main.innerHTML=`<div class="card empty">No se pudo cargar: ${esc(e.message)}</div>`; }
 }
@@ -385,6 +395,73 @@ async function vAfiliados(){
     {t:"Estado",f:a=>a.activo?pill("Activo","ok"):pill("Inactivo")},{t:"Clics",n:1,f:a=>num(a.clics)},{t:"Ventas",n:1,f:a=>num(a.ventas)},
     {t:"Conv.",n:1,f:a=>pct(a.ventas,a.clics)},{t:"Ganado",n:1,f:a=>mxn(a.ganado_mxn)},{t:"Por pagar",n:1,f:a=>mxn(a.pendiente_mxn)},{t:"Comisión",n:1,f:a=>esc(a.comision_pct)+"%"},{t:"Alta",n:1,f:a=>dia(a.created_at)}
   ],afiliados,{click:a=>"usuario/"+a.user_id})}</div>`;
+}
+
+// ---------- diagnóstico ----------
+const horasTxt=h=>h==null?"–":h<1?Math.round(h*60)+" min":h<48?h.toFixed(1)+" h":(h/24).toFixed(1)+" días";
+async function vDiagnostico(){
+  const d=await api("insights",{dias:dias()});
+  const kp=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
+  const NIV={alta:"bad",media:"warn",baja:""};
+  const alertas=d.alertas.length?d.alertas.map(a=>`<div class="al">${pill(a.nivel==="alta"?"Urgente":a.nivel==="media"?"Revisar":"Aviso",NIV[a.nivel])}<div><b style="font-weight:500">${esc(a.tipo)}</b><br><span class="mut">${esc(a.detalle)}</span>${a.user_id?` <a href="#usuario/${esc(a.user_id)}">ver usuario</a>`:""}</div></div>`).join(""):'<div class="empty">Todo en orden. No hay nada que atender.</div>';
+  const ob=d.onboarding, top=Math.max(1,...ob.map(x=>x.n));
+  const embudo=ob.map((x,i)=>{const prev=i?ob[i-1].n:0, caida=i&&prev?Math.round((1-x.n/prev)*100):null;
+    return `<div class="st"><div>${esc(x.paso)}${caida>15?` <span class="pill bad">-${caida}%</span>`:""}</div><div class="tr"><div class="fl" style="width:${(x.n/top*100).toFixed(1)}%"></div></div><div class="pc">${num(x.n)}</div></div>`;}).join("");
+  const m=d.margen, t=d.tiempos, sub=d.suscripciones;
+  const filaMargen=(n,x)=>`<tr><td>${n}</td><td class="n">${num(x.pedidos)}</td><td class="n">${mxn(x.ingreso)}</td><td class="n">${mxn(x.ia)}</td><td class="n">${mxn(x.comision)}</td><td class="n"><b style="font-weight:500">${mxn(x.margen)}</b></td><td class="n">${x.pedidos?mxn(x.margen/x.pedidos):"–"}</td><td class="n">${pct(x.margen,x.ingreso)}</td></tr>`;
+  const resp=d.respuestas.filter(r=>r.filas.length).map(r=>`<div class="card"><h3>${esc(r.titulo)}</h3>${tabla([{t:"Respuesta",f:x=>esc(x.valor)},{t:"Personas",n:1,f:x=>num(x.n)},{t:"Compraron",n:1,f:x=>num(x.compras)},{t:"Conv.",n:1,f:x=>pct(x.compras,x.n)}],r.filas.slice(0,12))}</div>`).join("");
+  main.innerHTML=`<h2>Diagnóstico</h2>
+  <div class="card" style="margin-bottom:14px"><h3>Alertas</h3>${alertas}</div>
+  <div class="card funnel" style="margin-bottom:14px"><h3>Dónde se van en el onboarding</h3><p class="mut" style="margin:-6px 0 10px;font-size:12.5px">Visitantes únicos que llegaron a cada pregunta en este periodo. En rojo, los pasos donde se va más del 15%.</p>${embudo}</div>
+  <div class="card" style="margin-bottom:14px"><h3>Margen real por venta</h3><p class="mut" style="margin:-6px 0 10px;font-size:12.5px">Precio cobrado menos el costo de la IA de cada reporte y la comisión estimada de Stripe (3.6% + $3 + IVA). Tipo de cambio ${m.tipo_cambio} MXN por dólar. Todas las ventas, sin filtro de fecha.</p>
+    <div class="tbl"><table><thead><tr><th>Plan</th><th class="n">Ventas</th><th class="n">Ingreso</th><th class="n">IA</th><th class="n">Stripe</th><th class="n">Margen</th><th class="n">Por venta</th><th class="n">%</th></tr></thead><tbody>${filaMargen("Esencial",m.esencial)}${filaMargen("Completo",m.completo)}${filaMargen("Total",m.total)}</tbody></table></div></div>
+  <div class="grid kpis" style="margin-bottom:14px">
+    ${kp("De cuenta a compra",horasTxt(t.desde_cuenta_h),"mediana")}${kp("De onboarding a compra",horasTxt(t.desde_onboarding_h),"mediana")}
+    ${kp("De lead gratis a compra",horasTxt(t.desde_lead_h),`${num(t.con_lead)} compras vinieron de un lead`)}
+    ${kp("Compran el mismo día",pct(t.mismo_dia,t.compras),`${num(t.mismo_dia)} de ${num(t.compras)}`)}${kp("En la primera semana",pct(t.semana,t.compras),num(t.semana))}${kp("Después de una semana",pct(t.mas,t.compras),num(t.mas))}
+  </div>
+  ${sub?`<div class="card" style="margin-bottom:14px"><h3>Suscripciones (Stripe)</h3><div class="grid kpis" style="margin-bottom:12px">
+    ${kp("Activas",num(sub.activas))}${kp("MRR aprox.",mxn(sub.mrr_mxn),Object.entries(sub.mrr_por_moneda).map(([c,v])=>`${Math.round(v).toLocaleString("es-MX")} ${c.toUpperCase()}`).join(" · ")||"–")}
+    ${kp("Cancelan al final del periodo",num(sub.cancelan_al_final))}${kp("Con pago atrasado",num(sub.morosas))}${kp("Duran en promedio",sub.vida_promedio_dias!=null?sub.vida_promedio_dias+" días":"–","las que ya cancelaron")}</div>
+    ${tabla([{t:"Mes",f:x=>esc(x.mes)},{t:"Altas",n:1,f:x=>num(x.altas)},{t:"Bajas",n:1,f:x=>num(x.bajas)}],sub.por_mes.slice(-12).reverse())}</div>`:""}
+  <h3 style="margin-top:22px">Qué contestan y quién compra <span class="mut" style="text-transform:none;letter-spacing:0">(${num(d.personas)} personas con respuestas)</span></h3>
+  <div class="grid two">${resp||'<div class="card empty">Todavía no hay respuestas.</div>'}</div>`;
+}
+
+// ---------- secuencias ----------
+let SEQ=null;
+function renderCorreo(cuerpo,fl){
+  let s=cuerpo.replace(/\[\[(\w+)\]\]([\s\S]*?)\[\[\/\1\]\]\n?/g,(_,k,t)=>fl[k]?t:"");
+  s=s.replace(/\{nombre\}/g,"Ana").replace(/\{objetivo\}/g,"tu cabello y cejas");
+  return s.split(/\n{2,}/).map(b=>{b=b.trim();if(!b)return"";const bt=b.match(/^\{boton:(.+)\}$/);if(bt)return`<a class="b">${esc(bt[1])}</a>`;return`<p>${esc(b).replace(/\n/g,"<br>")}</p>`;}).join("");
+}
+async function vSecuencias(arg){
+  if(!SEQ||!arg) SEQ=await api("secuencias");
+  const nombres={fotos:"Fotos",joven:"Verse más joven",mandibula:"Mandíbula y perfil",piel:"Piel",rasgos:"Cabello, cejas y barba"};
+  const grupos={}; for(const c of SEQ.correos)(grupos[c.secuencia]??=[]).push(c);
+  if(arg){ const [sec,paso]=arg.split("-"); const c=(grupos[sec]||[]).find(x=>String(x.paso)===paso); if(c) return editarCorreo(c,nombres); }
+  const st=SEQ.stats;
+  main.innerHTML=`<h2>Secuencias de abandono</h2><p class="mut" style="margin:-6px 0 14px;max-width:760px">Le llegan a quien contestó el onboarding y no pagó. Cada persona entra a una sola secuencia según lo que más quiere mejorar, y sale en cuanto compra o se da de baja. Haz clic en un correo para leerlo o cambiarlo.</p>
+  ${Object.keys(grupos).map(k=>{const x=st[k]||{};return `<div class="card" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h3 style="margin:0">${esc(nombres[k]||k)}</h3><span class="mut" style="font-size:12.5px">${num(x.inscritos)} entraron · ${num(x.activos)} activos · <b style="font-weight:500;color:var(--ok)">${num(x.compraron)} compraron</b> · ${num(x.bajas)} bajas</span></div>
+  ${tabla([{t:"#",f:c=>c.paso},{t:"Día",n:1,f:c=>c.dias},{t:"Asunto",f:c=>`${esc(c.asunto)}${c.activo?"":` ${pill("Pausado","warn")}`}`},{t:"Enviados",n:1,f:c=>num(c.enviados)+(c.fallidos?` <span class="mut">(${c.fallidos} fallaron)</span>`:"")},{t:"Clics",n:1,f:c=>num(c.clics)},{t:"Compras",n:1,f:c=>num(c.compras)}],grupos[k],{click:c=>`secuencias/${c.secuencia}-${c.paso}`})}</div>`;}).join("")}`;
+}
+function editarCorreo(c,nombres){
+  main.innerHTML=`<div class="row"><a class="btn" href="#secuencias">← Secuencias</a><span class="mut">${esc(nombres[c.secuencia]||c.secuencia)} · correo ${c.paso} de 7</span></div>
+  <div class="grid two"><div class="card ed">
+    <label>Asunto</label><input id="e-as" maxlength="200" value="${esc(c.asunto)}">
+    <label>Se envía el día (desde que dejó el onboarding)</label><input id="e-di" type="number" min="0" max="90" value="${esc(c.dias)}">
+    <label>Texto</label><textarea id="e-cu">${esc(c.cuerpo)}</textarea>
+    <p class="mut" style="font-size:12px;margin:8px 0 0">{nombre} pone su nombre. {boton:Texto} es el botón a su análisis. Lo que va entre [[sin_proc]] y [[/sin_proc]] solo lo ve quien no quiere procedimientos; igual con [[proc]], [[cirugia]] y [[presupuesto_bajo]].</p>
+    <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="e-ac" style="width:auto" ${c.activo?"checked":""}> Activo</label>
+    <div class="row" style="margin:14px 0 0"><button class="btn p" id="e-gu">Guardar</button><span id="e-ms" class="mut"></span></div>
+  </div><div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Vista previa</h3><select class="btn" id="e-pv"><option value="sin_proc">Sin procedimientos</option><option value="proc,cirugia,presupuesto_bajo">Abierto a cirugía, presupuesto bajo</option><option value="proc">Abierto a procedimientos</option></select></div>
+    <div class="prev"><p class="mut" style="font-size:12px;margin:0 0 10px" id="pv-as"></p><div class="m" id="pv"></div></div></div></div>`;
+  const pv=()=>{const fl={};$("#e-pv").value.split(",").forEach(k=>fl[k]=1);$("#pv").innerHTML=renderCorreo($("#e-cu").value,fl);$("#pv-as").textContent="Asunto: "+$("#e-as").value.replace(/\{nombre\}/g,"Ana");};
+  ["#e-cu","#e-as"].forEach(s=>$(s).oninput=pv);$("#e-pv").onchange=pv;pv();
+  $("#e-gu").onclick=async()=>{const b=$("#e-gu");b.disabled=true;$("#e-ms").textContent="Guardando…";
+    try{await api("guardar_correo",{id:c.id,asunto:$("#e-as").value,cuerpo:$("#e-cu").value,dias:Number($("#e-di").value),activo:$("#e-ac").checked});
+      Object.assign(c,{asunto:$("#e-as").value,cuerpo:$("#e-cu").value,dias:Number($("#e-di").value),activo:$("#e-ac").checked});$("#e-ms").textContent="Guardado. Los próximos envíos ya usan este texto.";}
+    catch(e){$("#e-ms").textContent=e.message;}b.disabled=false;};
 }
 
 let vivo=null;
