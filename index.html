@@ -125,7 +125,7 @@ details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
     </div>
     <nav class="tabs" id="tabs">
       <button data-v="resumen" class="on">Resumen</button><button data-v="analitica">Analítica</button><button data-v="enlaces">Enlaces</button><button data-v="usuarios">Usuarios</button>
-      <button data-v="pedidos">Pedidos</button><button data-v="leads">Leads</button><button data-v="afiliados">Afiliados</button><button data-v="diagnostico">Diagnóstico</button><button data-v="secuencias">Secuencias</button><button data-v="eventos">Eventos en vivo</button>
+      <button data-v="pedidos">Pedidos</button><button data-v="leads">Leads</button><button data-v="afiliados">Afiliados</button><button data-v="diagnostico">Diagnóstico</button><button data-v="secuencias">Secuencias</button><button data-v="correos">Correos</button><button data-v="eventos">Eventos en vivo</button>
     </nav>
   </div></header>
   <main class="wrap" id="main"><div class="load">Cargando…</div></main>
@@ -197,6 +197,7 @@ async function ir(v,desdeHash){
     else if(base==="eventos") await vEventos();
     else if(base==="diagnostico") await vDiagnostico();
     else if(base==="secuencias") await vSecuencias(arg);
+    else if(base==="correos") await vCorreos(arg?decodeURIComponent(arg):"");
     else await vResumen();
   }catch(e){ if(e.code===401||e.code===403){mostrarLogin(e.code===403?"Esta cuenta no tiene acceso.":"Tu sesión terminó. Entra de nuevo.");return;} main.innerHTML=`<div class="card empty">No se pudo cargar: ${esc(e.message)}</div>`; }
 }
@@ -328,12 +329,12 @@ async function vUsuarios(){
     {t:"Plan",f:u=>u.plan?pill(u.plan,"d"):`<span class="mut">${u.pedidos?"Sin pagar":"–"}</span>`},
     {t:"Pagado",n:1,f:u=>u.pagado_mxn?mxn(u.pagado_mxn):"–"},
     {t:"Suscripción",f:u=>pill(u.suscripcion)},
-    {t:"Puntaje gratis",n:1,f:u=>u.puntaje_gratis!=null?u.puntaje_gratis:"–"},
+    {t:"Puntaje gratis",n:1,f:u=>u.puntaje_gratis!=null?u.puntaje_gratis+(u.calificaciones>1?` <span class="mut">(${u.calificaciones} veces)</span>`:""):"–"},
     {t:"País",f:u=>esc(u.pais||"–")},
     {t:"Entrada",f:u=>esc(u.proveedor||"–")},
     {t:"Alta",n:1,f:u=>dia(u.creado)},{t:"Último acceso",n:1,f:u=>hace(u.ultimo)}
-  ],fs,{click:u=>"usuario/"+u.id}),u=>[u.email,u.nombre,u.nombre_form,u.plan,u.pais,u.suscripcion])}</div>
-  <p class="mut" style="font-size:12px">${num(reales.length)} con cuenta · ${num(usuarios.length-reales.length)} sesiones anónimas (empezaron el formulario sin correo).</p>`;
+  ],fs,{click:u=>u.solo_lead?"correos/"+encodeURIComponent(u.email):"usuario/"+u.id}),u=>[u.email,u.nombre,u.nombre_form,u.plan,u.pais,u.suscripcion,u.proveedor])}</div>
+  <p class="mut" style="font-size:12px">${num(reales.filter(u=>!u.solo_lead).length)} con cuenta · ${num(usuarios.filter(u=>u.solo_lead).length)} solo hicieron la calificación gratis (sin cuenta) · ${num(usuarios.length-reales.length)} sesiones anónimas (empezaron el formulario sin correo).</p>`;
 }
 
 async function vUsuario(id){
@@ -366,6 +367,7 @@ async function vUsuario(id){
       ${d.afiliado?`<h3 style="margin-top:14px">Afiliado</h3>${kv({"Código":d.afiliado.codigo,"Activo":d.afiliado.activo?"Sí":"No","Clics":d.afiliado.clics,"Comisión":d.afiliado.comision_pct+"%"})}`:""}</div>
   </div>
   <div class="card sec"><h3>Fotos (${d.fotos.length})</h3>${d.fotos.length?`<div class="photos">${d.fotos.map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${esc(f.url)}" loading="lazy" alt=""><span>${esc(nombreFoto(f.ruta))}</span></a>`).join("")}</div><p class="mut" style="font-size:11.5px;margin:8px 0 0">Los enlaces caducan en una hora.</p>`:'<p class="mut" style="margin:0">No tiene fotos guardadas (o las borró).</p>'}</div>
+  <div class="card sec"><h3>Correos que le mandamos (${(d.correos||[]).length})</h3>${tablaCorreos(d.correos||[])}</div>
   ${pedidos||'<div class="card sec empty">Sin pedidos</div>'}
   ${fis}
   ${d.chat.length?`<div class="card sec"><h3>Chat con el asistente (${d.chat.length})</h3><div class="chat">${d.chat.map(m=>`<div class="msg ${m.rol==="user"?"u":"a"}">${esc(m.texto)}</div>`).join("")}</div></div>`:""}
@@ -434,29 +436,73 @@ async function vDiagnostico(){
 let SEQ=null;
 function renderCorreo(cuerpo,fl){
   let s=cuerpo.replace(/\[\[(\w+)\]\]([\s\S]*?)\[\[\/\1\]\]\n?/g,(_,k,t)=>fl[k]?t:"");
-  s=s.replace(/\{nombre\}/g,"Ana").replace(/\{objetivo\}/g,"tu cabello y cejas");
-  return s.split(/\n{2,}/).map(b=>{b=b.trim();if(!b)return"";const bt=b.match(/^\{boton:(.+)\}$/);if(bt)return`<a class="b">${esc(bt[1])}</a>`;return`<p>${esc(b).replace(/\n/g,"<br>")}</p>`;}).join("");
+  s=s.replace(/\{nombre\}/g,"Ana").replace(/\{objetivo\}/g,"tu cabello y cejas").replace(/\{puntaje\}/g,"72").replace(/\{fuerte\}/g,"tus ojos").replace(/\{debil\}/g,"tu mandíbula");
+  return s.split(/\n{2,}/).map(b=>{b=b.trim();if(!b)return"";const bt=b.match(/^\{boton:(.+)\}$/);if(bt)return`<a class="b">${esc(bt[1])}</a>`;const im=b.match(/^\{imagen:(.+)\}$/);if(im)return`<img src="${esc(/^https?:/.test(im[1])?im[1]:"https://resalta.co"+im[1])}" alt="" style="width:100%;border-radius:10px;margin:0 0 12px">`;const da=b.match(/^\{dato:([^|}]+)\|([^}]+)\}$/);if(da)return`<p style="text-align:center"><b style="font-size:34px;font-weight:300">${esc(da[1])}</b><br><span class="mut" style="font-size:12px">${esc(da[2])}</span></p>`;return`<p>${esc(b).replace(/\n/g,"<br>")}</p>`;}).join("");
 }
+// ---------- correos ----------
+const NOMBRES_SEC={general:"General (formulario sin pagar)",gratis:"Calificación gratis",fotos:"Fotos",joven:"Verse más joven",mandibula:"Mandíbula y perfil",piel:"Piel",rasgos:"Cabello, cejas y barba"};
+const TIPO_CORREO={resultado:"Resultado de la calificación",listo:"Análisis listo",secuencia:"Secuencia"};
+const pctN=(a,b)=>b?Math.round(a/b*100):0;
+const pctTxt=(a,b)=>b?`${pctN(a,b)}% <span class="mut">(${num(a)})</span>`:"–";
+const nombreCorreo=c=>c.tipo==="secuencia"?`${NOMBRES_SEC[c.secuencia]||c.secuencia} · ${c.paso}`:(TIPO_CORREO[c.tipo]||c.tipo);
+const estadoCorreo=c=>c.ok===false?pill("Falló","bad"):c.clic_at?pill("Hizo clic","ok"):c.abierto_at?pill("Abierto","d"):pill("Enviado");
+function tablaCorreos(cs,{conPersona=false,cuentas={}}={}){
+  return tabla([
+    ...(conPersona?[{t:"Persona",f:c=>esc(c.email)}]:[]),
+    {t:"Correo",f:c=>`${esc(nombreCorreo(c))}<br><span class="mut">${esc(c.asunto||"")}</span>`},
+    {t:"Enviado",n:1,f:c=>fecha(c.enviado_at)},
+    {t:"Estado",f:c=>estadoCorreo(c)},
+    {t:"Abierto",n:1,f:c=>c.abierto_at?fecha(c.abierto_at)+(c.aperturas>1?` <span class="mut">×${c.aperturas}</span>`:""):"–"},
+    {t:"Clic",n:1,f:c=>c.clic_at?fecha(c.clic_at)+(c.clics>1?` <span class="mut">×${c.clics}</span>`:""):"–"}
+  ],cs,conPersona?{click:c=>cuentas[c.email]?"usuario/"+cuentas[c.email]:"correos/"+encodeURIComponent(c.email)}:{});
+}
+let CORREOS=null;
+async function vCorreos(email){
+  if(!CORREOS||!email) CORREOS=await api("correos");
+  const todos=CORREOS.correos, cuentas=CORREOS.cuentas||{};
+  const kcard=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
+  if(email){
+    const cs=todos.filter(c=>c.email===email);
+    main.innerHTML=`<div class="row" style="margin-bottom:20px"><a class="btn back" style="margin:0" href="#correos">← Correos</a>${cuentas[email]?`<a class="btn" href="#usuario/${esc(cuentas[email])}">Ver su cuenta</a>`:`<span class="mut">Sin cuenta: solo hizo la calificación gratis</span>`}</div>
+    <h2 class="h-user"><span>${esc(email)}</span><span class="mut">${num(cs.length)} correos</span></h2>
+    <div class="card">${tablaCorreos(cs)}</div>`;
+    return;
+  }
+  const ok=todos.filter(c=>c.ok!==false), ab=ok.filter(c=>c.abierto_at), cl=ok.filter(c=>c.clic_at), fall=todos.filter(c=>c.ok===false);
+  const grupos={};
+  for(const c of todos){const k=c.tipo==="secuencia"?`${c.secuencia}|${String(c.paso).padStart(2,"0")}`:`~${c.tipo}`;const g=(grupos[k]??={k,ej:c,env:0,ab:0,cl:0,fall:0,pers:new Set()});if(c.ok===false)g.fall++;else{g.env++;if(c.abierto_at)g.ab++;if(c.clic_at)g.cl++;}g.pers.add(c.email);}
+  const filas=Object.values(grupos).sort((a,b)=>a.k<b.k?-1:1);
+  const personas=new Set(todos.map(c=>c.email)).size;
+  main.innerHTML=`<h2>Correos</h2><p class="mut" style="margin:-6px 0 14px;max-width:780px">Cada correo que manda Resalta: el resultado de la calificación gratis, las secuencias y el aviso de "tu análisis está listo". Los de acceso y confirmación de cuenta los manda Supabase y no salen aquí. Las aperturas son aproximadas (Apple Mail abre las imágenes por su cuenta); los clics son exactos. Últimos 6 meses.</p>
+  <div class="grid kpis">${kcard("Enviados",num(ok.length),`${num(personas)} personas`)}${kcard("Abiertos",pctN(ab.length,ok.length)+"%",`${num(ab.length)} ${ab.length===1?"correo":"correos"}`)}${kcard("Con clic",pctN(cl.length,ok.length)+"%",`${num(cl.length)} ${cl.length===1?"correo":"correos"}`)}${kcard("Fallaron",num(fall.length),fall.length?"Sender no los aceptó":"Ninguno")}</div>
+  <div class="card sec"><h3>Por correo</h3>${tabla([
+    {t:"Correo",f:g=>`${esc(nombreCorreo(g.ej))}${g.ej.tipo==="secuencia"?`<br><span class="mut">${esc(g.ej.asunto||"")}</span>`:""}`},
+    {t:"Enviados",n:1,f:g=>num(g.env)+(g.fall?` <span class="mut">(${g.fall} fallaron)</span>`:"")},
+    {t:"Abiertos",n:1,f:g=>pctTxt(g.ab,g.env)},{t:"Con clic",n:1,f:g=>pctTxt(g.cl,g.env)}],filas)}</div>
+  <div class="card sec"><h3>Todos los envíos</h3>${buscador("qc",todos,fs=>tablaCorreos(fs.slice(0,500),{conPersona:true,cuentas}),c=>[c.email,c.asunto,c.secuencia,TIPO_CORREO[c.tipo]])}</div>`;
+}
+
 async function vSecuencias(arg){
   if(!SEQ||!arg) SEQ=await api("secuencias");
-  const nombres={fotos:"Fotos",joven:"Verse más joven",mandibula:"Mandíbula y perfil",piel:"Piel",rasgos:"Cabello, cejas y barba"};
+  const nombres=NOMBRES_SEC;
   const grupos={}; for(const c of SEQ.correos)(grupos[c.secuencia]??=[]).push(c);
   if(arg){ const [sec,paso]=arg.split("-"); const c=(grupos[sec]||[]).find(x=>String(x.paso)===paso); if(c) return editarCorreo(c,nombres); }
   const st=SEQ.stats;
-  main.innerHTML=`<h2>Secuencias de abandono</h2><p class="mut" style="margin:-6px 0 14px;max-width:760px">Le llegan a quien contestó el onboarding y no pagó. Cada persona entra a una sola secuencia según lo que más quiere mejorar, y sale en cuanto compra o se da de baja. Haz clic en un correo para leerlo o cambiarlo.</p>
-  ${Object.keys(grupos).map(k=>{const x=st[k]||{};return `<div class="card" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h3 style="margin:0">${esc(nombres[k]||k)}</h3><span class="mut" style="font-size:12.5px">${num(x.inscritos)} entraron · ${num(x.activos)} activos · <b style="font-weight:500;color:var(--ok)">${num(x.compraron)} compraron</b> · ${num(x.bajas)} bajas</span></div>
-  ${tabla([{t:"#",f:c=>c.paso},{t:"Día",n:1,f:c=>c.dias},{t:"Asunto",f:c=>`${esc(c.asunto)}${c.activo?"":` ${pill("Pausado","warn")}`}`},{t:"Enviados",n:1,f:c=>num(c.enviados)+(c.fallidos?` <span class="mut">(${c.fallidos} fallaron)</span>`:"")},{t:"Clics",n:1,f:c=>num(c.clics)},{t:"Compras",n:1,f:c=>num(c.compras)}],grupos[k],{click:c=>`secuencias/${c.secuencia}-${c.paso}`})}</div>`;}).join("")}`;
+  const orden=k=>({general:0,gratis:1}[k]??9);
+  main.innerHTML=`<h2>Secuencias</h2><p class="mut" style="margin:-6px 0 14px;max-width:760px"><b style="font-weight:500">General:</b> le llega a quien contestó el formulario del plan y no pagó. <b style="font-weight:500">Calificación gratis:</b> a quien solo hizo la calificación gratis; si después empieza el formulario, pasa a la general. Las dos se detienen si compra o se da de baja. Las otras están apagadas (sin personas). Haz clic en un correo para leerlo o cambiarlo.</p>
+  ${Object.keys(grupos).sort((a,b)=>orden(a)-orden(b)).map(k=>{const x=st[k]||{};return `<div class="card" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h3 style="margin:0">${esc(nombres[k]||k)}</h3><span class="mut" style="font-size:12.5px">${num(x.inscritos)} entraron · ${num(x.activos)} activos · <b style="font-weight:500;color:var(--ok)">${num(x.compraron)} compraron</b> · ${num(x.bajas)} bajas</span></div>
+  ${tabla([{t:"#",f:c=>c.paso},{t:"Día",n:1,f:c=>c.dias},{t:"Asunto",f:c=>`${esc(c.asunto)}${c.activo?"":` ${pill("Pausado","warn")}`}`},{t:"Enviados",n:1,f:c=>num(c.enviados)+(c.fallidos?` <span class="mut">(${c.fallidos} fallaron)</span>`:"")},{t:"Abiertos",n:1,f:c=>pctTxt(c.abiertos,c.enviados)},{t:"Clics",n:1,f:c=>num(Math.max(c.clics,c.clics_correo||0))},{t:"Compras",n:1,f:c=>num(c.compras)}],grupos[k],{click:c=>`secuencias/${c.secuencia}-${c.paso}`})}</div>`;}).join("")}`;
 }
 function editarCorreo(c,nombres){
-  main.innerHTML=`<div class="row" style="margin-bottom:20px"><a class="btn back" style="margin:0" href="#secuencias">← Secuencias</a><span class="mut">${esc(nombres[c.secuencia]||c.secuencia)} · correo ${c.paso} de 7</span></div>
+  main.innerHTML=`<div class="row" style="margin-bottom:20px"><a class="btn back" style="margin:0" href="#secuencias">← Secuencias</a><span class="mut">${esc(nombres[c.secuencia]||c.secuencia)} · correo ${c.paso} de ${SEQ.correos.filter(x=>x.secuencia===c.secuencia).length}</span></div>
   <div class="grid two"><div class="card ed">
     <label>Asunto</label><input id="e-as" maxlength="200" value="${esc(c.asunto)}">
     <label>Se envía el día (desde que dejó el onboarding)</label><input id="e-di" type="number" min="0" max="90" value="${esc(c.dias)}">
     <label>Texto</label><textarea id="e-cu">${esc(c.cuerpo)}</textarea>
-    <p class="mut" style="font-size:12px;margin:8px 0 0">{nombre} pone su nombre. {boton:Texto} es el botón a su análisis. Lo que va entre [[sin_proc]] y [[/sin_proc]] solo lo ve quien no quiere procedimientos; igual con [[proc]], [[cirugia]] y [[presupuesto_bajo]].</p>
+    <p class="mut" style="font-size:12px;margin:8px 0 0">{nombre} pone su nombre. {boton:Texto} es el botón a su análisis. En la de calificación gratis también: {puntaje}, {fuerte}, {debil}, y los bloques [[alto]] (80 o más), [[bajo]], [[hombre]] y [[mujer]]. Lo que va entre [[sin_proc]] y [[/sin_proc]] solo lo ve quien no quiere procedimientos; igual con [[proc]], [[cirugia]] y [[presupuesto_bajo]].</p>
     <label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="e-ac" style="width:auto" ${c.activo?"checked":""}> Activo</label>
     <div class="row" style="margin:14px 0 0"><button class="btn p" id="e-gu">Guardar</button><span id="e-ms" class="mut"></span></div>
-  </div><div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Vista previa</h3><select class="btn" id="e-pv"><option value="sin_proc">Sin procedimientos</option><option value="proc,cirugia,presupuesto_bajo">Abierto a cirugía, presupuesto bajo</option><option value="proc">Abierto a procedimientos</option></select></div>
+  </div><div class="card"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Vista previa</h3><select class="btn" id="e-pv"><option value="sin_proc">Sin procedimientos</option><option value="proc,cirugia,presupuesto_bajo">Abierto a cirugía, presupuesto bajo</option><option value="proc">Abierto a procedimientos</option><option value="bajo,hombre">Gratis: puntaje bajo, hombre</option><option value="alto,mujer">Gratis: puntaje alto, mujer</option></select></div>
     <div class="prev"><p class="mut" style="font-size:12px;margin:0 0 10px" id="pv-as"></p><div class="m" id="pv"></div></div></div></div>`;
   const pv=()=>{const fl={};$("#e-pv").value.split(",").forEach(k=>fl[k]=1);$("#pv").innerHTML=renderCorreo($("#e-cu").value,fl);$("#pv-as").textContent="Asunto: "+$("#e-as").value.replace(/\{nombre\}/g,"Ana");};
   ["#e-cu","#e-as"].forEach(s=>$(s).oninput=pv);$("#e-pv").onchange=pv;pv();
