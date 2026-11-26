@@ -70,6 +70,13 @@ svg.chart{width:100%;height:auto;display:block}
 .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
 .photos a{display:block;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--mist);position:relative}
 .photos img{width:100%;height:100%;object-fit:cover;display:block}
+.cals{display:grid;gap:12px}
+.cal{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:start;padding:12px;border:1px solid var(--line,#E3E7EA);border-radius:12px}
+.cal .photos{grid-template-columns:1fr}
+.cal .sinfoto{aspect-ratio:3/4;border-radius:10px;background:var(--mist);display:grid;place-items:center;text-align:center;font-size:11.5px;padding:10px}
+.mini{width:34px;height:44px;border-radius:6px;object-fit:cover;display:block;background:var(--mist)}
+.ucell{display:flex;gap:10px;align-items:center}
+@media(max-width:600px){.cal{grid-template-columns:110px 1fr;gap:12px;padding:10px}}
 .photos span{position:absolute;left:6px;bottom:6px;font-size:10.5px;background:rgba(22,25,29,.7);color:#fff;padding:2px 6px;border-radius:6px;max-width:calc(100% - 12px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 dl.kv{display:grid;grid-template-columns:minmax(110px,38%) 1fr;gap:6px 14px;margin:0;font-size:13px}
 dl.kv dt{color:var(--muted)}dl.kv dd{margin:0;word-break:break-word}
@@ -181,7 +188,7 @@ window.addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(h&&h
 async function ir(v,desdeHash){
   const [base,arg]=v.split("/");
   vista=v; if(!desdeHash&&location.hash.slice(1)!==v) location.hash=v;
-  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===base||(base==="usuario"&&b.dataset.v==="usuarios")));
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===base||((base==="usuario"||base==="lead")&&b.dataset.v==="usuarios")));
   const act=$("#tabs button.on"); if(act){const n=$("#tabs");n.scrollTo({left:Math.max(0,act.offsetLeft-n.offsetLeft-14),behavior:"smooth"});}
   $("#rango").classList.toggle("hide",!["resumen","analitica","enlaces","diagnostico"].includes(base));
   main.innerHTML='<div class="load">Cargando…</div>'; window.scrollTo(0,0);
@@ -191,6 +198,7 @@ async function ir(v,desdeHash){
     else if(base==="enlaces") await vEnlaces();
     else if(base==="usuarios") await vUsuarios();
     else if(base==="usuario") await vUsuario(arg);
+    else if(base==="lead") await vLead(decodeURIComponent(arg||""));
     else if(base==="pedidos") await vPedidos();
     else if(base==="leads") await vLeads();
     else if(base==="afiliados") await vAfiliados();
@@ -233,6 +241,20 @@ function buscador(id,filas,render,campos){
   setTimeout(()=>{const i=$("#"+id);if(i){i.oninput=()=>pinta(i.value);pinta("");}},0);
   return `<div class="row"><input class="search" id="${id}" placeholder="Buscar…" autocomplete="off"><span class="mut" id="${id}-n"></span></div><div id="${id}-out"></div>`;
 }
+
+// ---------- free rating (shared) ----------
+const fotoLead=l=>(l&&l.metrics&&l.metrics.foto)||null;
+function calificaciones(leads){
+  if(!leads||!leads.length) return '<p class="mut" style="margin:0">No hizo la calificación gratis con este correo.</p>';
+  return `<div class="cals">${leads.map(l=>{const m=l.metrics||{},f=fotoLead(l),ps=m.partes||[];
+    const dias=(Date.now()-new Date(l.created_at))/864e5;
+    return `<div class="cal">${f?`<div class="photos"><a href="${esc(f)}" target="_blank" rel="noopener"><img src="${esc(f)}" loading="lazy" alt=""><span>${esc(dia(l.created_at))}</span></a></div>`:`<div class="sinfoto mut">${dias>30?"La foto ya se borró (se guarda 30 días)":"Sin foto"}</div>`}
+      <div><p style="margin:0 0 8px"><span class="mono" style="font-size:24px">${esc(l.score??"–")}</span> <span class="mut">/100 · ${fecha(l.created_at)}</span> ${l.enviado_at?pill("Correo enviado","ok"):pill("Correo pendiente","warn")}</p>
+        ${ps.length?`<dl class="kv">${ps.map(p=>`<dt>${esc(p.k)}</dt><dd class="mono">${esc(Math.round(p.v))}</dd>`).join("")}</dl>`:""}
+        ${m.fuerte||m.debil?`<p class="mut" style="margin:10px 0 0;font-size:13px">${m.fuerte?`Más fuerte: <b style="font-weight:500;color:var(--ink,#16191D)">${esc(m.fuerte)}</b>`:""}${m.debil&&m.debil.k?` · Más débil: <b style="font-weight:500;color:var(--ink,#16191D)">${esc(m.debil.k)}</b>`:""}</p>`:""}
+      </div></div>`;}).join("")}</div>`;
+}
+const tablaActividad=ev=>tabla([{t:"Cuándo",f:e=>fecha(e.ts)},{t:"Evento",f:e=>esc(EVN[e.nombre]||e.nombre)},{t:"Página",f:e=>esc(e.path)},{t:"Fuente",f:e=>esc(e.utm_source||e.ref||"–")},{t:"Campaña",f:e=>esc(e.utm_campaign||"–")},{t:"Disp.",f:e=>esc(e.dispositivo||"")}],ev.slice(0,150));
 
 // ---------- views ----------
 let cache={};
@@ -325,7 +347,7 @@ async function vUsuarios(){
   const {usuarios}=await api("usuarios");
   const reales=usuarios.filter(u=>!u.anonimo);
   main.innerHTML=`<h2>Usuarios</h2><div class="card">${buscador("qu",usuarios,fs=>tabla([
-    {t:"Usuario",f:u=>`<b style="font-weight:500">${esc(u.nombre||u.nombre_form||"Sin nombre")}</b><br><span class="mut">${esc(u.email||(u.anonimo?"Anónimo (sin correo)":"–"))}</span>`},
+    {t:"Usuario",f:u=>`<div class="ucell">${u.foto?`<img class="mini" src="${esc(u.foto)}" loading="lazy" alt="">`:""}<div><b style="font-weight:500">${esc(u.nombre||u.nombre_form||"Sin nombre")}</b><br><span class="mut">${esc(u.email||(u.anonimo?"Anónimo (sin correo)":"–"))}</span></div></div>`},
     {t:"Plan",f:u=>u.plan?pill(u.plan,"d"):`<span class="mut">${u.pedidos?"Sin pagar":"–"}</span>`},
     {t:"Pagado",n:1,f:u=>u.pagado_mxn?mxn(u.pagado_mxn):"–"},
     {t:"Suscripción",f:u=>pill(u.suscripcion)},
@@ -333,7 +355,7 @@ async function vUsuarios(){
     {t:"País",f:u=>esc(u.pais||"–")},
     {t:"Entrada",f:u=>esc(u.proveedor||"–")},
     {t:"Alta",n:1,f:u=>dia(u.creado)},{t:"Último acceso",n:1,f:u=>hace(u.ultimo)}
-  ],fs,{click:u=>u.solo_lead?"correos/"+encodeURIComponent(u.email):"usuario/"+u.id}),u=>[u.email,u.nombre,u.nombre_form,u.plan,u.pais,u.suscripcion,u.proveedor])}</div>
+  ],fs,{click:u=>u.solo_lead?"lead/"+encodeURIComponent(u.email):"usuario/"+u.id}),u=>[u.email,u.nombre,u.nombre_form,u.plan,u.pais,u.suscripcion,u.proveedor])}</div>
   <p class="mut" style="font-size:12px">${num(reales.filter(u=>!u.solo_lead).length)} con cuenta · ${num(usuarios.filter(u=>u.solo_lead).length)} solo hicieron la calificación gratis (sin cuenta) · ${num(usuarios.length-reales.length)} sesiones anónimas (empezaron el formulario sin correo).</p>`;
 }
 
@@ -363,16 +385,37 @@ async function vUsuario(id){
   <div class="grid three">
     <div class="card"><h3>Cuenta</h3>${kv({"ID":u.id,"Entró con":u.proveedor,"Alta":fecha(u.creado),"Último acceso":fecha(u.ultimo),"Correo confirmado":u.confirmado?fecha(u.confirmado):"No","Tipo":u.tipo})}</div>
     <div class="card"><h3>Suscripción</h3>${d.suscripcion?kv({"Estado":d.suscripcion.estado,"Periodo hasta":fecha(d.suscripcion.periodo_fin),"Cancela al final":d.suscripcion.cancela?"Sí":"No","Cliente Stripe":d.suscripcion.stripe_customer}):'<p class="mut">Sin suscripción</p>'}</div>
-    <div class="card"><h3>Calificación gratis</h3>${d.leads.length?d.leads.map(l=>`<p style="margin:0 0 6px"><span class="mono" style="font-size:20px">${esc(l.score??"–")}</span> <span class="mut">/100 · ${fecha(l.created_at)} · ${l.enviado_at?"correo enviado":"correo pendiente"}</span></p>`).join(""):'<p class="mut">No la hizo con este correo</p>'}
+    <div class="card"><h3>Calificación gratis</h3>${d.leads.length?`<p style="margin:0 0 6px"><span class="mono" style="font-size:20px">${esc(d.leads[d.leads.length-1].score??"–")}</span> <span class="mut">/100 la más reciente · ${num(d.leads.length)} ${d.leads.length===1?"vez":"veces"}</span></p><p class="mut" style="margin:0;font-size:12.5px">Fotos y puntajes abajo.</p>`:'<p class="mut">No la hizo con este correo</p>'}
       ${d.afiliado?`<h3 style="margin-top:14px">Afiliado</h3>${kv({"Código":d.afiliado.codigo,"Activo":d.afiliado.activo?"Sí":"No","Clics":d.afiliado.clics,"Comisión":d.afiliado.comision_pct+"%"})}`:""}</div>
   </div>
   <div class="card sec"><h3>Fotos (${d.fotos.length})</h3>${d.fotos.length?`<div class="photos">${d.fotos.map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${esc(f.url)}" loading="lazy" alt=""><span>${esc(nombreFoto(f.ruta))}</span></a>`).join("")}</div><p class="mut" style="font-size:11.5px;margin:8px 0 0">Los enlaces caducan en una hora.</p>`:'<p class="mut" style="margin:0">No tiene fotos guardadas (o las borró).</p>'}</div>
+  ${d.leads.length?`<div class="card sec"><h3>Calificaciones gratis (${d.leads.length})</h3>${calificaciones([...d.leads].reverse())}</div>`:""}
   <div class="card sec"><h3>Correos que le mandamos (${(d.correos||[]).length})</h3>${tablaCorreos(d.correos||[])}</div>
   ${pedidos||'<div class="card sec empty">Sin pedidos</div>'}
   ${fis}
   ${d.chat.length?`<div class="card sec"><h3>Chat con el asistente (${d.chat.length})</h3><div class="chat">${d.chat.map(m=>`<div class="msg ${m.rol==="user"?"u":"a"}">${esc(m.texto)}</div>`).join("")}</div></div>`:""}
   <div class="card sec"><h3>Actividad en el sitio (${d.eventos.length})</h3>${tabla([{t:"Cuándo",f:e=>fecha(e.ts)},{t:"Evento",f:e=>esc(EVN[e.nombre]||e.nombre)},{t:"Página",f:e=>esc(e.path)},{t:"Fuente",f:e=>esc(e.utm_source||e.ref||"–")},{t:"Campaña",f:e=>esc(e.utm_campaign||"–")},{t:"Disp.",f:e=>esc(e.dispositivo||"")}],d.eventos.slice(0,150))}</div>
   <details class="sec"><summary>Metadata de la cuenta</summary><pre class="j">${esc(JSON.stringify(u.metadata,null,2))}</pre></details>`;
+}
+
+async function vLead(email){
+  const d=await api("lead",{email});
+  if(d.cuenta){ ir("usuario/"+d.cuenta); return; }
+  const l0=d.leads[0]||{}, s=d.secuencia, env=d.envios||[];
+  const paises=[...new Set(d.eventos.map(e=>e.tz).filter(Boolean))], disp=[...new Set(d.eventos.map(e=>e.dispositivo).filter(Boolean))];
+  const primera=d.eventos[d.eventos.length-1];
+  const origen=primera?(primera.utm_source||primera.ref||"Directo"):null;
+  const estadoSec=d.baja?pill("Se dio de baja","bad"):!s?pill("Todavía no entra"):s.salio_at?pill({registro:"Salió: creó cuenta",compra:"Salió: compró",baja:"Salió: baja",terminó:"Terminó"}[s.motivo]||("Salió: "+(s.motivo||"")),"d"):pill("Activa","ok");
+  main.innerHTML=`<button class="btn back" onclick="history.back()">← Volver</button>
+  <h2 class="h-user"><span>${esc(l0.nombre||"Sin nombre")}</span><span class="mut">${esc(d.email)}</span></h2>
+  <div class="grid three">
+    <div class="card"><h3>Persona</h3>${`<dl class="kv">${[["Tipo","Solo calificación gratis (sin cuenta)"],["Primera vez",fecha(d.leads[d.leads.length-1]&&d.leads[d.leads.length-1].created_at)],["Calificaciones",num(d.leads.length)],["Llegó por",origen],["Zona horaria",paises.join(", ")],["Dispositivo",disp.join(", ")]].filter(([,v])=>v).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`}</div>
+    <div class="card"><h3>Secuencia de la calificación</h3><p style="margin:0 0 8px">${estadoSec}</p>${s?`<dl class="kv"><dt>Entró</dt><dd>${fecha(s.desde)}</dd>${s.salio_at?`<dt>Salió</dt><dd>${fecha(s.salio_at)}</dd>`:""}<dt>Correos enviados</dt><dd>${num(env.filter(e=>e.ok).length)}</dd></dl>`:'<p class="mut" style="margin:0;font-size:12.5px">Entra en la siguiente corrida (cada hora), si el correo de resultado ya salió.</p>'}</div>
+    <div class="card"><h3>Correos</h3><p style="margin:0"><span class="mono" style="font-size:20px">${num(d.correos.length)}</span> <span class="mut">enviados · ${num(d.correos.filter(c=>c.abierto_at).length)} abiertos · ${num(d.correos.filter(c=>c.clic_at).length)} con clic</span></p></div>
+  </div>
+  <div class="card sec"><h3>Calificaciones gratis (${d.leads.length})</h3>${calificaciones(d.leads)}</div>
+  <div class="card sec"><h3>Correos que le mandamos (${d.correos.length})</h3>${tablaCorreos(d.correos)}</div>
+  <div class="card sec"><h3>Actividad en el sitio (${d.eventos.length})</h3>${d.eventos.length?tablaActividad(d.eventos):'<p class="mut" style="margin:0">No encontramos sus visitas.</p>'}</div>`;
 }
 
 async function vPedidos(){
@@ -387,9 +430,9 @@ async function vPedidos(){
 async function vLeads(){
   const {leads}=await api("leads");
   main.innerHTML=`<h2>Leads</h2><div class="card">${buscador("ql",leads,fs=>tabla([
-    {t:"Nombre",f:l=>esc(l.nombre||"–")},{t:"Correo",f:l=>esc(l.email)},{t:"Origen",f:l=>esc(l.source||"–")},{t:"Puntaje",n:1,f:l=>l.score!=null?l.score:"–"},
+    {t:"Foto",f:l=>fotoLead(l)?`<img class="mini" src="${esc(fotoLead(l))}" loading="lazy" alt="">`:'<span class="mut">–</span>'},{t:"Nombre",f:l=>esc(l.nombre||"–")},{t:"Correo",f:l=>esc(l.email)},{t:"Origen",f:l=>esc(l.source||"–")},{t:"Puntaje",n:1,f:l=>l.score!=null?l.score:"–"},
     {t:"Correo de resultado",f:l=>l.source==="calificacion"?(l.enviado_at?pill("Enviado","ok"):pill("Pendiente","warn")):"–"},{t:"Fecha",n:1,f:l=>fecha(l.created_at)}
-  ],fs),l=>[l.email,l.nombre,l.source])}</div>`;
+  ],fs,{click:l=>"lead/"+encodeURIComponent(l.email)}),l=>[l.email,l.nombre,l.source])}</div>`;
 }
 
 async function vAfiliados(){
@@ -454,7 +497,7 @@ function tablaCorreos(cs,{conPersona=false,cuentas={}}={}){
     {t:"Estado",f:c=>estadoCorreo(c)},
     {t:"Abierto",n:1,f:c=>c.abierto_at?fecha(c.abierto_at)+(c.aperturas>1?` <span class="mut">×${c.aperturas}</span>`:""):"–"},
     {t:"Clic",n:1,f:c=>c.clic_at?fecha(c.clic_at)+(c.clics>1?` <span class="mut">×${c.clics}</span>`:""):"–"}
-  ],cs,conPersona?{click:c=>cuentas[c.email]?"usuario/"+cuentas[c.email]:"correos/"+encodeURIComponent(c.email)}:{});
+  ],cs,conPersona?{click:c=>cuentas[c.email]?"usuario/"+cuentas[c.email]:"lead/"+encodeURIComponent(c.email)}:{});
 }
 let CORREOS=null;
 async function vCorreos(email){
