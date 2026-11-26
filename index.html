@@ -244,13 +244,16 @@ function buscador(id,filas,render,campos){
 
 // ---------- free rating (shared) ----------
 const fotoLead=l=>(l&&l.metrics&&l.metrics.foto)||null;
+// AI ratings (from /calificacion) are on /10 and saved x10; the /herramientas ones are /100
+const esDiez=l=>!!(l&&l.metrics&&l.metrics.escala===10);
+const puntajeLead=l=>l.score==null?"–":esDiez(l)?(l.score/10).toFixed(1):String(l.score);
 function calificaciones(leads){
   if(!leads||!leads.length) return '<p class="mut" style="margin:0">No hizo la calificación gratis con este correo.</p>';
   return `<div class="cals">${leads.map(l=>{const m=l.metrics||{},f=fotoLead(l),ps=m.partes||[];
     const dias=(Date.now()-new Date(l.created_at))/864e5;
     return `<div class="cal">${f?`<div class="photos"><a href="${esc(f)}" target="_blank" rel="noopener"><img src="${esc(f)}" loading="lazy" alt=""><span>${esc(dia(l.created_at))}</span></a></div>`:`<div class="sinfoto mut">${dias>30?"La foto ya se borró (se guarda 30 días)":"Sin foto"}</div>`}
-      <div><p style="margin:0 0 8px"><span class="mono" style="font-size:24px">${esc(l.score??"–")}</span> <span class="mut">/100 · ${fecha(l.created_at)}</span> ${l.enviado_at?pill("Correo enviado","ok"):pill("Correo pendiente","warn")}</p>
-        ${ps.length?`<dl class="kv">${ps.map(p=>`<dt>${esc(p.k)}</dt><dd class="mono">${esc(Math.round(p.v))}</dd>`).join("")}</dl>`:""}
+      <div><p style="margin:0 0 8px"><span class="mono" style="font-size:24px">${esc(puntajeLead(l))}</span> <span class="mut">${esDiez(l)?"/10 · calificación con IA":"/100 · puntaje de herramienta"} · ${fecha(l.created_at)}</span> ${l.enviado_at?pill("Correo enviado","ok"):pill("Correo pendiente","warn")}</p>
+        ${ps.length?`<dl class="kv">${ps.map(p=>`<dt>${esc(p.k)}</dt><dd class="mono">${esc(esDiez(l)?Number(p.v).toFixed(1):Math.round(p.v))}</dd>`).join("")}</dl>`:""}
         ${m.fuerte||m.debil?`<p class="mut" style="margin:10px 0 0;font-size:13px">${m.fuerte?`Más fuerte: <b style="font-weight:500;color:var(--ink,#16191D)">${esc(m.fuerte)}</b>`:""}${m.debil&&m.debil.k?` · Más débil: <b style="font-weight:500;color:var(--ink,#16191D)">${esc(m.debil.k)}</b>`:""}</p>`:""}
       </div></div>`;}).join("")}</div>`;
 }
@@ -369,7 +372,7 @@ async function vUsuario(id){
     const pz=rp&&rp.puntajes;
     return `<div class="card sec"><div class="row" style="margin:0 0 10px"><b style="font-weight:500">Pedido ${esc(o.id.slice(0,8))}</b>${pill(o.status)}${o.tier?pill(plan(o.tier),"d"):""}<span class="mut">${o.amount_mxn?mxn(o.amount_mxn)+" MXN":""}</span><span class="sp"></span><span class="mut">Creado ${fecha(o.created_at)}${o.paid_at?` · Pagado ${fecha(o.paid_at)}`:""}${o.delivered_at?` · Entregado ${fecha(o.delivered_at)}`:""}</span></div>
       <div class="grid two">
-        <div>${o.calificacion?`<h3>Calificación que vio en el onboarding</h3><p style="margin:0 0 8px"><span class="mono" style="font-size:24px">${o.calificacion.total.toFixed(1)}</span> <span class="mut">/10</span></p>${o.calificacion.zonas.length?`<dl class="kv" style="margin-bottom:16px">${o.calificacion.zonas.map(z=>`<dt>${esc(z.nombre)}</dt><dd class="mono">${z.v.toFixed(1)}</dd>`).join("")}</dl>`:""}`:""}
+        <div>${o.calificacion?`<h3>Calificación que vio en el onboarding${o.calificacion.ia?" (IA)":""}</h3><p style="margin:0 0 8px"><span class="mono" style="font-size:24px">${o.calificacion.total.toFixed(1)}</span> <span class="mut">/10</span></p>${o.calificacion.zonas.length?`<dl class="kv" style="margin-bottom:16px">${o.calificacion.zonas.map(z=>`<dt>${esc(z.nombre)}</dt><dd class="mono">${z.v.toFixed(1)}</dd>`).join("")}</dl>`:""}${o.calificacion.razon?`<p class="mut" style="margin:0 0 16px;font-size:13px">${esc(o.calificacion.razon)}</p>`:""}`:""}
           <h3>Respuestas del onboarding</h3>${o.answers?kv(o.answers):'<p class="mut">Sin respuestas</p>'}</div>
         <div><h3>Reporte</h3>${rp?`<p style="margin:0 0 8px">${pill(rp.estado||"listo")} ${rp.generado?`<span class="mut">${fecha(rp.generado)}${rp.segundos?` · ${rp.segundos} s`:""}</span>`:""}${rp.motivo?` <span class="pill bad">${esc(rp.motivo)}</span>`:""}</p>
           ${pz?`<dl class="kv">${Object.entries(pz).map(([k,v])=>`<dt>${esc(k)}</dt><dd class="mono">${v==null?"–":esc(v)}</dd>`).join("")}</dl>`:""}
@@ -387,7 +390,7 @@ async function vUsuario(id){
   <div class="grid three">
     <div class="card"><h3>Cuenta</h3>${kv({"ID":u.id,"Entró con":u.proveedor,"Alta":fecha(u.creado),"Último acceso":fecha(u.ultimo),"Correo confirmado":u.confirmado?fecha(u.confirmado):"No","Tipo":u.tipo})}</div>
     <div class="card"><h3>Suscripción</h3>${d.suscripcion?kv({"Estado":d.suscripcion.estado,"Periodo hasta":fecha(d.suscripcion.periodo_fin),"Cancela al final":d.suscripcion.cancela?"Sí":"No","Cliente Stripe":d.suscripcion.stripe_customer}):'<p class="mut">Sin suscripción</p>'}</div>
-    <div class="card"><h3>Calificación gratis</h3>${d.leads.length?`<p style="margin:0 0 6px"><span class="mono" style="font-size:20px">${esc(d.leads[d.leads.length-1].score??"–")}</span> <span class="mut">/100 la más reciente · ${num(d.leads.length)} ${d.leads.length===1?"vez":"veces"}</span></p><p class="mut" style="margin:0;font-size:12.5px">Fotos y puntajes abajo.</p>`:'<p class="mut">No la hizo con este correo</p>'}
+    <div class="card"><h3>Calificación gratis</h3>${d.leads.length?`<p style="margin:0 0 6px"><span class="mono" style="font-size:20px">${esc(puntajeLead(d.leads[d.leads.length-1]))}</span> <span class="mut">${esDiez(d.leads[d.leads.length-1])?"/10":"/100"} la más reciente · ${num(d.leads.length)} ${d.leads.length===1?"vez":"veces"}</span></p><p class="mut" style="margin:0;font-size:12.5px">Fotos y puntajes abajo.</p>`:'<p class="mut">No la hizo con este correo</p>'}
       ${d.afiliado?`<h3 style="margin-top:14px">Afiliado</h3>${kv({"Código":d.afiliado.codigo,"Activo":d.afiliado.activo?"Sí":"No","Clics":d.afiliado.clics,"Comisión":d.afiliado.comision_pct+"%"})}`:""}</div>
   </div>
   <div class="card sec"><h3>Fotos (${d.fotos.length})</h3>${d.fotos.length?`<div class="photos">${d.fotos.map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${esc(f.url)}" loading="lazy" alt=""><span>${esc(nombreFoto(f.ruta))}</span></a>`).join("")}</div><p class="mut" style="font-size:11.5px;margin:8px 0 0">Los enlaces caducan en una hora.</p>`:'<p class="mut" style="margin:0">No tiene fotos guardadas (o las borró).</p>'}</div>
@@ -432,7 +435,7 @@ async function vPedidos(){
 async function vLeads(){
   const {leads}=await api("leads");
   main.innerHTML=`<h2>Leads</h2><div class="card">${buscador("ql",leads,fs=>tabla([
-    {t:"Foto",f:l=>fotoLead(l)?`<img class="mini" src="${esc(fotoLead(l))}" loading="lazy" alt="">`:'<span class="mut">–</span>'},{t:"Nombre",f:l=>esc(l.nombre||"–")},{t:"Correo",f:l=>esc(l.email)},{t:"Origen",f:l=>esc(l.source||"–")},{t:"Puntaje",n:1,f:l=>l.score!=null?l.score:"–"},
+    {t:"Foto",f:l=>fotoLead(l)?`<img class="mini" src="${esc(fotoLead(l))}" loading="lazy" alt="">`:'<span class="mut">–</span>'},{t:"Nombre",f:l=>esc(l.nombre||"–")},{t:"Correo",f:l=>esc(l.email)},{t:"Origen",f:l=>esc(l.source||"–")},{t:"Puntaje",n:1,f:l=>l.score!=null?`${puntajeLead(l)} <span class="mut">${esDiez(l)?"/10":"/100"}</span>`:"–"},
     {t:"Correo de resultado",f:l=>l.source==="calificacion"?(l.enviado_at?pill("Enviado","ok"):pill("Pendiente","warn")):"–"},{t:"Fecha",n:1,f:l=>fecha(l.created_at)}
   ],fs,{click:l=>"lead/"+encodeURIComponent(l.email)}),l=>[l.email,l.nombre,l.source])}</div>`;
 }
