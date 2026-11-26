@@ -128,6 +128,7 @@ details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
   .tbl td:first-child{white-space:normal;min-width:150px;max-width:210px}
   tr.click:hover td{background:none}
 }
+.pager{justify-content:center;gap:12px;margin:14px 0 0}.pager:empty{display:none}.btn.danger{color:#B42318;border-color:#F1C4BF}.btn:disabled{opacity:.45;cursor:default}
 </style>
 </head>
 <body>
@@ -263,10 +264,25 @@ function barrasH(pares,{total,max=10,extra}={}){
 const tabla=(cols,filas,{click}={})=>filas.length?`<div class="tbl"><table><thead><tr>${cols.map(c=>`<th class="${c.n?"n":""}">${esc(c.t)}</th>`).join("")}</tr></thead><tbody>${filas.map(f=>`<tr${click?` class="click" data-go="${esc(click(f))}"`:""}>${cols.map(c=>`<td class="${c.n?"n":""}">${c.f(f)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`:'<div class="empty">No hay registros</div>';
 main.addEventListener("click",e=>{const tr=e.target.closest("tr[data-go]");if(tr&&!e.target.closest("a")) ir(tr.dataset.go);const ph=e.target.closest(".photos a");if(ph){e.preventDefault();const lb=document.createElement("div");lb.className="lightbox";lb.innerHTML=`<img src="${esc(ph.href)}" alt="">`;lb.onclick=()=>lb.remove();document.body.appendChild(lb);}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".lightbox").forEach(x=>x.remove());});
-function buscador(id,filas,render,campos){
-  const pinta=q=>{q=(q||"").toLowerCase().trim();const fs=q?filas.filter(f=>campos(f).join(" ").toLowerCase().includes(q)):filas;$("#"+id+"-out").innerHTML=render(fs);$("#"+id+"-n").textContent=num(fs.length)+" de "+num(filas.length);};
-  setTimeout(()=>{const i=$("#"+id);if(i){i.oninput=()=>pinta(i.value);pinta("");}},0);
-  return `<div class="row"><input class="search" id="${id}" placeholder="Buscar…" autocomplete="off"><span class="mut" id="${id}-n"></span></div><div id="${id}-out"></div>`;
+function buscador(id,filas,render,campos,porPag=50){
+  let pag=0,fs=filas;
+  const pinta=()=>{const tot=Math.max(1,Math.ceil(fs.length/porPag));pag=Math.min(pag,tot-1);
+    $("#"+id+"-out").innerHTML=render(fs.slice(pag*porPag,(pag+1)*porPag));
+    $("#"+id+"-n").textContent=fs.length>porPag?`${num(pag*porPag+1)}–${num(Math.min(fs.length,(pag+1)*porPag))} de ${num(fs.length)}`+(fs.length<filas.length?` (de ${num(filas.length)})`:""):num(fs.length)+" de "+num(filas.length);
+    const pg=$("#"+id+"-pg");pg.innerHTML=tot>1?`<button class="btn" data-p="-1"${pag?"":" disabled"}>← Anterior</button><span class="mut">Página ${pag+1} de ${tot}</span><button class="btn" data-p="1"${pag<tot-1?"":" disabled"}>Siguiente →</button>`:"";
+    pg.querySelectorAll("button").forEach(b=>b.onclick=()=>{pag+=Number(b.dataset.p);pinta();$("#"+id).scrollIntoView({block:"nearest"});});};
+  const filtra=q=>{q=(q||"").toLowerCase().trim();fs=q?filas.filter(f=>campos(f).join(" ").toLowerCase().includes(q)):filas;pag=0;pinta();};
+  setTimeout(()=>{const i=$("#"+id);if(i){i.oninput=()=>filtra(i.value);filtra("");}},0);
+  return `<div class="row"><input class="search" id="${id}" placeholder="Buscar…" autocomplete="off"><span class="mut" id="${id}-n"></span></div><div id="${id}-out"></div><div class="row pager" id="${id}-pg"></div>`;
+}
+
+// ---------- delete a person (account or free-rating only) ----------
+async function borrarPersona({id,email,nombre,pagado}){
+  const quien=email||nombre||"esta persona";
+  const aviso=`Vas a borrar a ${quien} para siempre: ${id?"su cuenta, pedidos, reportes, fotos, chat, calificaciones, ":"sus calificaciones gratis, "}correos y actividad. No se puede deshacer.`+(pagado?`\n\nOjo: esta persona pagó. El cobro sigue en Stripe; aquí solo se borran sus datos.`:"")+`\n\nEscribe BORRAR para confirmar.`;
+  if((prompt(aviso)||"").trim().toUpperCase()!=="BORRAR") return;
+  try{ await api("borrar",id?{id}:{email}); alert("Listo, se borró."); ir("usuarios"); }
+  catch(e){ alert("No se pudo borrar: "+e.message); }
 }
 
 // ---------- free rating (shared) ----------
@@ -434,7 +450,9 @@ async function vUsuario(id){
   ${fis}
   ${d.chat.length?`<div class="card sec"><h3>Chat con el asistente (${d.chat.length})</h3><div class="chat">${d.chat.map(m=>`<div class="msg ${m.rol==="user"?"u":"a"}">${esc(m.texto)}</div>`).join("")}</div></div>`:""}
   <div class="card sec"><h3>Actividad en el sitio (${d.eventos.length})</h3>${tabla([{t:"Cuándo",f:e=>fecha(e.ts)},{t:"Evento",f:e=>esc(EVN[e.nombre]||e.nombre)},{t:"Página",f:e=>esc(e.path)},{t:"Fuente",f:e=>esc(e.utm_source||e.ref||"–")},{t:"Campaña",f:e=>esc(e.utm_campaign||"–")},{t:"Disp.",f:e=>esc(e.dispositivo||"")}],d.eventos.slice(0,150))}</div>
-  <details class="sec"><summary>Metadata de la cuenta</summary><pre class="j">${esc(JSON.stringify(u.metadata,null,2))}</pre></details>`;
+  <details class="sec"><summary>Metadata de la cuenta</summary><pre class="j">${esc(JSON.stringify(u.metadata,null,2))}</pre></details>
+  <div class="card sec"><h3>Borrar cuenta</h3><p class="mut" style="margin:0 0 10px;font-size:13px">Borra la cuenta y todo lo suyo: pedidos, reportes, fotos, chat, calificaciones, correos y actividad. No se puede deshacer.</p><button class="btn danger" id="borrar">Borrar esta cuenta</button></div>`;
+  $("#borrar").onclick=()=>borrarPersona({id:u.id,email:u.email,nombre:u.nombre,pagado:d.pedidos.some(o=>o.status==="pagado"||o.status==="listo")});
 }
 
 async function vLead(email){
@@ -454,7 +472,9 @@ async function vLead(email){
   </div>
   <div class="card sec"><h3>Calificaciones gratis (${d.leads.length})</h3>${calificaciones(d.leads)}</div>
   <div class="card sec"><h3>Correos que le mandamos (${d.correos.length})</h3>${tablaCorreos(d.correos)}</div>
-  <div class="card sec"><h3>Actividad en el sitio (${d.eventos.length})</h3>${d.eventos.length?tablaActividad(d.eventos):'<p class="mut" style="margin:0">No encontramos sus visitas.</p>'}</div>`;
+  <div class="card sec"><h3>Actividad en el sitio (${d.eventos.length})</h3>${d.eventos.length?tablaActividad(d.eventos):'<p class="mut" style="margin:0">No encontramos sus visitas.</p>'}</div>
+  <div class="card sec"><h3>Borrar</h3><p class="mut" style="margin:0 0 10px;font-size:13px">Borra sus calificaciones gratis, su secuencia y sus correos. No se puede deshacer.</p><button class="btn danger" id="borrar">Borrar a esta persona</button></div>`;
+  $("#borrar").onclick=()=>borrarPersona({email:d.email,nombre:l0.nombre});
 }
 
 async function vPedidos(){
