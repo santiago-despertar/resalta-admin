@@ -315,8 +315,15 @@ async function vResumen(){
     <div class="card funnel"><h3>Embudo</h3>${e.map((s,i)=>`<div class="st"><span>${esc(s.paso)}</span><span class="tr"><span class="fl" style="display:block;width:${e[0].n?Math.max(1.5,s.n/e[0].n*100):0}%"></span></span><span class="pc">${num(s.n)}${i?` <span class="mut">${pct(s.n,e[0].n)}</span>`:""}</span></div>`).join("")}
       <p class="mut" style="font-size:12px;margin:10px 0 0">Personas únicas en el periodo. El porcentaje es contra el total de visitantes.</p></div>
     <div class="card"><h3>De dónde llegan</h3>${tabla([{t:"Fuente",f:x=>esc(x.fuente)},{t:"Visitantes",n:1,f:x=>num(x.visitantes)},{t:"Compras",n:1,f:x=>num(x.compras)},{t:"Conv.",n:1,f:x=>pct(x.compras,x.visitantes)}],r.fuentes)}</div>
-  </div>`;
+  </div>
+  ${r.niveles?`<div class="card sec"><h3>Precios por nivel</h3><p class="mut" style="margin:-6px 0 10px;font-size:12.5px">Pedidos que empezaron el onboarding desde ${esc(fecha(r.niveles_desde))}. Cada quien ve el precio de su nivel según su edad y presupuesto. Conversión: de los que vieron el precio, cuántos pagaron.</p>${tabla([
+    {t:"Nivel",f:x=>`<b>${esc(NIVEL[x.nivel]||x.nivel)}</b><br><span class="mut">${esc(x.precios)}</span>`},
+    {t:"Onboarding",n:1,f:x=>num(x.onboarding)},{t:"Vieron precio",n:1,f:x=>num(x.vieron_precio)},{t:"Abrieron pago",n:1,f:x=>num(x.iniciaron_pago)},
+    {t:"Pagaron",n:1,f:x=>`${num(x.pagaron)}${x.completo?` <span class="mut">(${num(x.completo)} Completo)</span>`:""}`},
+    {t:"Conv.",n:1,f:x=>pct(x.pagaron,x.vieron_precio)},{t:"Ingresos",n:1,f:x=>mxn(x.ingresos_mxn)},{t:"Ticket",n:1,f:x=>x.pagaron?mxn(x.ingresos_mxn/x.pagaron):"–"}
+  ],r.niveles)}</div>`:""}`;
 }
+const NIVEL={bajo:"Bajo",medio:"Medio",normal:"Normal",alto:"Alto"};
 
 async function vAnalitica(){
   const r=await datosResumen();
@@ -454,9 +461,9 @@ async function vPedidos(){
   const {pedidos}=await api("pedidos");
   main.innerHTML=`<h2>Pedidos</h2><div class="card">${buscador("qp",pedidos,fs=>tabla([
     {t:"Pedido",f:o=>`<span class="mono">${esc(o.id.slice(0,8))}</span>`},{t:"Cliente",f:o=>`${esc(o.nombre||"")}<br><span class="mut">${esc(o.email||"–")}</span>`},
-    {t:"Estado",f:o=>pill(o.status)},{t:"Calificación",n:1,f:o=>o.calificacion!=null?`<span class="mono">${o.calificacion.toFixed(1)}</span>`:"–"},{t:"Plan",f:o=>o.tier?esc(plan(o.tier)):"–"},{t:"Monto",n:1,f:o=>o.amount_mxn?mxn(o.amount_mxn):"–"},
+    {t:"Estado",f:o=>pill(o.status)},{t:"Calificación",n:1,f:o=>o.calificacion!=null?`<span class="mono">${o.calificacion.toFixed(1)}</span>`:"–"},{t:"Plan",f:o=>o.tier?esc(plan(o.tier)):"–"},{t:"Nivel",f:o=>o.nivel?`${esc(NIVEL[o.nivel]||o.nivel)}${o.edad?` <span class="mut">${esc(String(o.edad))} años</span>`:""}`:"–"},{t:"Monto",n:1,f:o=>o.amount_mxn?mxn(o.amount_mxn):"–"},
     {t:"Origen",f:o=>esc(o.origen||"–")},{t:"Afiliado",f:o=>o.afiliado_id?"Sí":"–"},{t:"Creado",n:1,f:o=>fecha(o.created_at)},{t:"Pagado",n:1,f:o=>fecha(o.paid_at)}
-  ],fs,{click:o=>"usuario/"+o.user_id}),o=>[o.id,o.email,o.nombre,o.status,o.tier,o.origen])}</div>`;
+  ],fs,{click:o=>"usuario/"+o.user_id}),o=>[o.id,o.email,o.nombre,o.status,o.tier,o.origen,o.nivel])}</div>`;
 }
 
 async function vLeads(){
