@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Resalta · Admin</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234A5866'/><text x='16' y='22' font-family='Helvetica' font-size='17' fill='white' text-anchor='middle'>r</text></svg>">
@@ -11,7 +11,7 @@
 <style>
 :root{--surface:#F3F1EC;--raised:#FFFFFF;--mist:#E3E7EA;--ink:#16191D;--muted:#5B6470;--slate:#6E7E8E;--deep:#4A5866;--sand:#CFE4FF;--line:#D3D8DD;--ok:#3F7A57;--bad:#A24B3E;--warn:#9A7524;
 --sans:"Inter",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;--r:14px}
-*{box-sizing:border-box}html,body{margin:0;background:var(--surface);color:var(--ink);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}body{overflow-x:clip}html,body{margin:0;background:var(--surface);color:var(--ink);font:14px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
 button,input,select{font:inherit;color:inherit}a{color:var(--deep)}
 .hide{display:none!important}
 .wrap{max-width:1280px;margin:0 auto;padding:0 20px}
@@ -30,13 +30,13 @@ main.wrap{padding-top:28px;padding-bottom:60px}
 h2{font-size:22px;font-weight:400;margin:0 0 14px;letter-spacing:-.01em}
 h3{font-size:13px;font-weight:500;margin:0 0 12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .card{background:var(--raised);border:1px solid var(--line);border-radius:var(--r);padding:18px}
-.grid{display:grid;gap:14px}
+.grid{display:grid;gap:14px}.grid>*,.cal>*{min-width:0}.card{min-width:0;overflow-wrap:anywhere}
 .kpis{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 .kpi .v{font:500 26px/1.1 var(--mono);letter-spacing:-.02em;margin-top:6px}
 .kpi .l{font-size:12.5px;color:var(--muted)}.kpi .s{font-size:12px;color:var(--muted);margin-top:4px}
-.two{grid-template-columns:1fr 1fr}.three{grid-template-columns:repeat(3,1fr)}
-@media(max-width:900px){.two,.three{grid-template-columns:1fr}}
-.tbl{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:900px){.two,.three{grid-template-columns:minmax(0,1fr)}}
+.tbl{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;font-weight:500;color:var(--muted);font-size:12px;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;background:var(--raised)}
 td{padding:9px 10px;border-bottom:1px solid var(--mist);vertical-align:top}
@@ -50,8 +50,8 @@ td.n,th.n{text-align:right;font-family:var(--mono);white-space:nowrap}
 .funnel .st{display:grid;grid-template-columns:minmax(120px,220px) 1fr 90px;gap:12px;align-items:center;padding:7px 0}
 .funnel .tr{height:26px;background:var(--mist);border-radius:7px;overflow:hidden}.funnel .fl{height:100%;background:var(--deep);border-radius:7px}
 .funnel .pc{font-family:var(--mono);text-align:right;font-size:13px}
-@media(max-width:600px){.funnel .st{grid-template-columns:1fr 70px}.funnel .tr{grid-column:1/-1;order:3}}
-.hbar{display:grid;grid-template-columns:minmax(90px,40%) 1fr 48px;gap:10px;align-items:center;padding:4px 0;font-size:13px}
+@media(max-width:600px){.funnel .st{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px}.funnel .tr{grid-column:1/-1;order:3;height:18px}}
+.hbar{display:grid;grid-template-columns:minmax(0,40%) minmax(0,1fr) auto;gap:10px;align-items:center;padding:4px 0;font-size:13px}
 .hbar .t{height:8px;background:var(--mist);border-radius:4px;overflow:hidden}.hbar .f{height:100%;background:var(--slate)}
 .hbar .k{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 svg.chart{width:100%;height:auto;display:block}
@@ -88,10 +88,10 @@ pre.j{white-space:pre-wrap;word-break:break-word;font:12px/1.5 var(--mono);backg
 details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
 .lightbox{position:fixed;inset:0;background:rgba(10,12,14,.9);z-index:50;display:grid;place-items:center;padding:20px}
 .lightbox img{max-width:100%;max-height:92vh;border-radius:10px}
-.gen{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.gen label{font-size:12px;color:var(--muted);display:block}
+.gen{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.gen label{font-size:12px;color:var(--muted);display:block}
 .gen select,.gen input{width:100%;margin-top:4px;border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff}
 .out{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}.out code{flex:1;min-width:0;overflow-wrap:anywhere;font:12.5px/1.4 var(--mono);background:#F8F7F3;border-radius:10px;padding:10px 12px}
-@media(max-width:900px){.gen{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.gen{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.wrap{padding:0 14px}.kpis{gap:10px}.kpi .v{font-size:20px}.kpi .s{font-size:11.5px}.card{padding:14px}.bar .who{display:none}main.wrap{padding-top:24px}.h-user .mut{font-size:13.5px}nav.tabs{margin:0 -14px;padding-left:14px;padding-right:14px}}
 .ed label{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px}
 .ed input,.ed textarea{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 12px}
@@ -101,6 +101,33 @@ details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
 .prev .m p{margin:0 0 12px}.prev .b{display:inline-block;background:#4A5866;color:#fff;border-radius:999px;padding:11px 22px;text-decoration:none;margin:6px 0 14px}
 .al{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--mist)}.al:last-child{border:0}
 .seq{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+
+@media(max-width:640px){
+  /* iOS zooms in on any field under 16px: keep every field at 16px */
+  input,select,textarea,.search,select.btn{font-size:16px!important}
+  .bar{gap:8px;height:56px}.logo{font-size:18px}.logo small{margin-left:4px;font-size:11px}
+  .btn{padding:8px 12px}
+  h2{font-size:20px}h2 .mut{display:block;font-size:13.5px!important;margin-top:2px}
+  .search{max-width:none;flex:1 1 100%}
+  .gen{grid-template-columns:minmax(0,1fr)}
+  .out .btn{flex:1 1 100%}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .photos{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cal{grid-template-columns:96px minmax(0,1fr)}
+  dl.kv{grid-template-columns:minmax(0,42%) minmax(0,1fr)}
+  .prev{padding:10px}.prev .m{padding:16px}
+  .ed textarea{min-height:300px}
+  .msg{max-width:92%}
+  .row[style*="space-between"]{gap:6px}
+  /* wide tables scroll sideways inside their card; the page itself never moves */
+  .tbl{overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
+  .tbl table{width:max-content;min-width:100%}
+  .tbl td{white-space:nowrap}
+  .tbl td:first-child,.tbl th:first-child{position:sticky;left:0;z-index:1;background:var(--raised);box-shadow:1px 0 0 var(--mist)}
+  .tbl th:first-child{z-index:2}
+  .tbl td:first-child{white-space:normal;min-width:150px;max-width:210px}
+  tr.click:hover td{background:none}
+}
 </style>
 </head>
 <body>
@@ -220,7 +247,7 @@ function lineas(serie,claves,{alto=220}={}){
   let g="";
   for(let i=0;i<=4;i++){const v=tope*i/4,yy=y(v);g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${yy}" y2="${yy}" stroke="#E3E7EA"/><text x="${P.l-6}" y="${yy+4}" text-anchor="end" font-size="10.5" fill="#5B6470" font-family="JetBrains Mono">${Math.round(v).toLocaleString("es-MX")}</text>`;}
   const paso=Math.max(1,Math.ceil(n/(ang?5:8)));
-  serie.forEach((d,i)=>{if(i%paso===0||i===n-1)g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="10.5" fill="#5B6470">${esc(d.dia.slice(8,10)+"/"+d.dia.slice(5,7))}</text>`;});
+  serie.forEach((d,i)=>{const ult=i===n-1;if((i%paso===0&&(ult||n-1-i>=paso*.6))||ult)g+=`<text x="${x(i)}" y="${H-8}" text-anchor="${ult&&n>1?"end":i===0&&n>1?"start":"middle"}" font-size="10.5" fill="#5B6470">${esc(d.dia.slice(8,10)+"/"+d.dia.slice(5,7))}</text>`;});
   claves.forEach(c=>{
     if(c.barra){const bw=Math.max(2,(W-P.l-P.r)/n*.55);serie.forEach((d,i)=>{const v=d[c.k]||0;if(v)g+=`<rect x="${x(i)-bw/2}" y="${y(v)}" width="${bw}" height="${H-P.b-y(v)}" rx="2" fill="${c.c}"><title>${esc(d.dia)}: ${v}</title></rect>`;});}
     else{const pts=serie.map((d,i)=>`${x(i)},${y(d[c.k]||0)}`).join(" ");g+=`<polyline points="${pts}" fill="none" stroke="${c.c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
