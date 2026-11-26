@@ -351,6 +351,7 @@ async function vUsuarios(){
     {t:"Plan",f:u=>u.plan?pill(u.plan,"d"):`<span class="mut">${u.pedidos?"Sin pagar":"–"}</span>`},
     {t:"Pagado",n:1,f:u=>u.pagado_mxn?mxn(u.pagado_mxn):"–"},
     {t:"Suscripción",f:u=>pill(u.suscripcion)},
+    {t:"Calificación onboarding",n:1,f:u=>u.calif_onboarding!=null?`<span class="mono">${u.calif_onboarding.toFixed(1)}</span> <span class="mut">/10</span>`:"–"},
     {t:"Puntaje gratis",n:1,f:u=>u.puntaje_gratis!=null?u.puntaje_gratis+(u.calificaciones>1?` <span class="mut">(${u.calificaciones} veces)</span>`:""):"–"},
     {t:"País",f:u=>esc(u.pais||"–")},
     {t:"Entrada",f:u=>esc(u.proveedor||"–")},
@@ -368,7 +369,8 @@ async function vUsuario(id){
     const pz=rp&&rp.puntajes;
     return `<div class="card sec"><div class="row" style="margin:0 0 10px"><b style="font-weight:500">Pedido ${esc(o.id.slice(0,8))}</b>${pill(o.status)}${o.tier?pill(plan(o.tier),"d"):""}<span class="mut">${o.amount_mxn?mxn(o.amount_mxn)+" MXN":""}</span><span class="sp"></span><span class="mut">Creado ${fecha(o.created_at)}${o.paid_at?` · Pagado ${fecha(o.paid_at)}`:""}${o.delivered_at?` · Entregado ${fecha(o.delivered_at)}`:""}</span></div>
       <div class="grid two">
-        <div><h3>Respuestas del onboarding</h3>${o.answers?kv(o.answers):'<p class="mut">Sin respuestas</p>'}</div>
+        <div>${o.calificacion?`<h3>Calificación que vio en el onboarding</h3><p style="margin:0 0 8px"><span class="mono" style="font-size:24px">${o.calificacion.total.toFixed(1)}</span> <span class="mut">/10</span></p>${o.calificacion.zonas.length?`<dl class="kv" style="margin-bottom:16px">${o.calificacion.zonas.map(z=>`<dt>${esc(z.nombre)}</dt><dd class="mono">${z.v.toFixed(1)}</dd>`).join("")}</dl>`:""}`:""}
+          <h3>Respuestas del onboarding</h3>${o.answers?kv(o.answers):'<p class="mut">Sin respuestas</p>'}</div>
         <div><h3>Reporte</h3>${rp?`<p style="margin:0 0 8px">${pill(rp.estado||"listo")} ${rp.generado?`<span class="mut">${fecha(rp.generado)}${rp.segundos?` · ${rp.segundos} s`:""}</span>`:""}${rp.motivo?` <span class="pill bad">${esc(rp.motivo)}</span>`:""}</p>
           ${pz?`<dl class="kv">${Object.entries(pz).map(([k,v])=>`<dt>${esc(k)}</dt><dd class="mono">${v==null?"–":esc(v)}</dd>`).join("")}</dl>`:""}
           ${rp.arquetipo?`<p style="margin:10px 0 0"><b style="font-weight:500">${esc(rp.arquetipo.nombre)}</b> <span class="mut">${esc(rp.arquetipo.texto||"")}</span></p>`:""}
@@ -422,7 +424,7 @@ async function vPedidos(){
   const {pedidos}=await api("pedidos");
   main.innerHTML=`<h2>Pedidos</h2><div class="card">${buscador("qp",pedidos,fs=>tabla([
     {t:"Pedido",f:o=>`<span class="mono">${esc(o.id.slice(0,8))}</span>`},{t:"Cliente",f:o=>`${esc(o.nombre||"")}<br><span class="mut">${esc(o.email||"–")}</span>`},
-    {t:"Estado",f:o=>pill(o.status)},{t:"Plan",f:o=>o.tier?esc(plan(o.tier)):"–"},{t:"Monto",n:1,f:o=>o.amount_mxn?mxn(o.amount_mxn):"–"},
+    {t:"Estado",f:o=>pill(o.status)},{t:"Calificación",n:1,f:o=>o.calificacion!=null?`<span class="mono">${o.calificacion.toFixed(1)}</span>`:"–"},{t:"Plan",f:o=>o.tier?esc(plan(o.tier)):"–"},{t:"Monto",n:1,f:o=>o.amount_mxn?mxn(o.amount_mxn):"–"},
     {t:"Origen",f:o=>esc(o.origen||"–")},{t:"Afiliado",f:o=>o.afiliado_id?"Sí":"–"},{t:"Creado",n:1,f:o=>fecha(o.created_at)},{t:"Pagado",n:1,f:o=>fecha(o.paid_at)}
   ],fs,{click:o=>"usuario/"+o.user_id}),o=>[o.id,o.email,o.nombre,o.status,o.tier,o.origen])}</div>`;
 }
