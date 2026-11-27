@@ -363,7 +363,8 @@ async function vCostos(){
       <p class="mut" style="margin:-4px 0 12px">Este mes</p><div class="grid kpis">${f(M.mes)}</div>
       <p class="mut" style="margin:18px 0 12px">Últimos 7 días</p><div class="grid kpis">${f(M.d7)}</div>
       <div class="card sec"><h3>Campañas (30 días)</h3>${(M.campanas||[]).length?tabla([{t:"Campaña",f:x=>esc(x.nombre)},{t:"Gasto",n:1,f:x=>mx(x.gasto)},{t:"Clics",n:1,f:x=>num(x.clics)},{t:"CTR",n:1,f:x=>x.ctr.toFixed(2)+"%"},{t:"Registros",n:1,f:x=>num(x.registros)},{t:"Compras",n:1,f:x=>num(x.compras)},{t:"Costo por compra",n:1,f:x=>x.costo_compra!=null?mx(x.costo_compra):"–"}],M.campanas):'<p class="mut">Todavía no hay campañas con gasto.</p>'}</div>`;
-    } else h+=`<div class="card sec"><h3>Anuncios de Meta</h3><p class="mut">${M&&M.error?"No se pudo leer: "+esc(M.error):"Falta conectar la cuenta de anuncios. En cuanto esté, aquí ves el gasto, los clics, los registros, las compras y el costo por compra de cada campaña."}</p></div>`;
+    } else if(M&&!M.error&&M.cuenta) h+=`<div class="card sec"><h3>Anuncios de Meta <span class="mut" style="font-size:14px">· ${esc(M.cuenta.nombre||"")}</span></h3><p class="mut">Conectado. La cuenta todavía no tiene gasto; en cuanto corras la primera campaña, aquí ves el gasto, los clics, los registros, las compras y el costo por compra de cada campaña.</p></div>`;
+    else h+=`<div class="card sec"><h3>Anuncios de Meta</h3><p class="mut">${M&&M.error?"No se pudo leer: "+esc(M.error):"Falta conectar la cuenta de anuncios. En cuanto esté, aquí ves el gasto, los clics, los registros, las compras y el costo por compra de cada campaña."}</p></div>`;
     box.innerHTML=h;
   }).catch(()=>{});
   // GitHub: site size and publishes in the last hour, from GitHub's public API (no key needed)
