@@ -183,7 +183,7 @@ const hace=t=>{if(!t)return"–";const s=(Date.now()-new Date(t))/1e3;if(s<60)re
 const EST={pagado:"ok",listo:"ok",borrador:"",active:"ok",trialing:"ok",canceled:"bad",past_due:"warn",incomplete:"warn",error:"bad",generando:"warn"};
 const pill=(t,k)=>t?`<span class="pill ${k!=null?k:(EST[t]||"")}">${esc(t)}</span>`:`<span class="mut">–</span>`;
 const plan=t=>t==="hard"?"Completo":t==="soft"?"Esencial":t;
-const EVN={calificacion_resultado:"Vio su resultado",page_view:"Vista",generate_lead:"Lead",sign_up:"Registro",begin_checkout:"Inicio de pago",purchase:"Compra",afiliado_alta:"Alta afiliado",afiliado_registro:"Registro afiliado"};
+const EVN={calificacion_resultado:"Vio su resultado",page_view:"Vista",generate_lead:"Lead",sign_up:"Registro",login:"Entró",google_clic:"Clic en Google",begin_checkout:"Inicio de pago",purchase:"Compra",afiliado_alta:"Alta afiliado",afiliado_registro:"Registro afiliado"};
 
 async function api(accion,extra){
   const {data:{session}}=await sb.auth.getSession();
