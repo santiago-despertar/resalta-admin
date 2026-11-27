@@ -338,6 +338,15 @@ async function vResumen(){
     {t:"Pagaron",n:1,f:x=>`${num(x.pagaron)}${x.completo?` <span class="mut">(${num(x.completo)} Completo)</span>`:""}`},
     {t:"Conv.",n:1,f:x=>pct(x.pagaron,x.vieron_precio)},{t:"Ingresos",n:1,f:x=>mxn(x.ingresos_mxn)},{t:"Ticket",n:1,f:x=>x.pagaron?mxn(x.ingresos_mxn/x.pagaron):"–"}
   ],r.niveles)}</div>`:""}`;
+  // Supabase usage against the Free plan limits
+  main.insertAdjacentHTML("beforeend", '<div id="usoSb"></div>');
+  api("uso").then(u => {
+    const box = $("#usoSb"); if (!box || !u || !u.ok) return;
+    const MB = 1024 * 1024;
+    const filas = [["Base de datos", u.db_bytes / MB, 500, "MB"], ["Archivos (fotos y correos)", u.storage_bytes / MB, 1024, "MB"], ["Usuarios activos del mes", u.usuarios_mes, 50000, ""]];
+    const color = p => p >= 90 ? "var(--bad)" : p >= 70 ? "#C98A1B" : "";
+    box.innerHTML = `<div class="card funnel sec"><h3>Uso de Supabase (plan gratis)</h3>${filas.map(([n, x, max, un]) => { const p = x / max * 100, c = color(p); return `<div class="st"><span>${esc(n)}</span><span class="tr"><span class="fl" style="display:block;width:${Math.max(1.5, Math.min(100, p))}%${c ? ";background:" + c : ""}"></span></span><span>${num(Math.round(x))}${un ? " " + un : ""} de ${num(max)}${un ? " " + un : ""} · ${p < 1 ? "menos de 1" : Math.round(p)}%</span></div>`; }).join("")}<p class="mut" style="font-size:12.5px;margin:10px 0 0">Arriba de 70% se pone en amarillo y arriba de 90% en rojo. El tráfico de salida (5 GB al mes) solo se ve en <a href="https://supabase.com/dashboard/org/kiqzforugctkgizptdxq/usage" target="_blank" rel="noopener">la página de uso de Supabase</a>. Si se pasa de algún límite, Supabase te manda un correo y te da un periodo de gracia.</p></div>`;
+  }).catch(() => {});
 }
 const NIVEL={bajo:"Bajo",medio:"Medio",normal:"Normal",alto:"Alto"};
 
