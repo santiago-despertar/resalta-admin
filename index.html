@@ -159,7 +159,7 @@ details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
       <button class="btn" id="salir" type="button">Salir</button>
     </div>
     <nav class="tabs" id="tabs">
-      <button data-v="resumen" class="on">Resumen</button><button data-v="analitica">Analítica</button><button data-v="enlaces">Enlaces</button><button data-v="usuarios">Usuarios</button>
+      <button data-v="resumen" class="on">Resumen</button><button data-v="analitica">Analítica</button><button data-v="anuncios">Anuncios</button><button data-v="enlaces">Enlaces</button><button data-v="usuarios">Usuarios</button>
       <button data-v="pedidos">Pedidos</button><button data-v="leads">Leads</button><button data-v="afiliados">Afiliados</button><button data-v="diagnostico">Diagnóstico</button><button data-v="secuencias">Secuencias</button><button data-v="correos">Correos</button><button data-v="costos">Costos</button><button data-v="eventos">Eventos en vivo</button>
     </nav>
   </div></header>
@@ -218,7 +218,7 @@ async function ir(v,desdeHash){
   vista=v; if(!desdeHash&&location.hash.slice(1)!==v) location.hash=v;
   document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===base||((base==="usuario"||base==="lead")&&b.dataset.v==="usuarios")));
   const act=$("#tabs button.on"); if(act){const n=$("#tabs");n.scrollTo({left:Math.max(0,act.offsetLeft-n.offsetLeft-14),behavior:"smooth"});}
-  $("#rango").classList.toggle("hide",!["resumen","analitica","enlaces","diagnostico"].includes(base));
+  $("#rango").classList.toggle("hide",!["resumen","analitica","enlaces","diagnostico","anuncios"].includes(base));
   main.innerHTML='<div class="load">Cargando…</div>'; window.scrollTo(0,0);
   try{
     if(base==="resumen") await vResumen();
@@ -231,6 +231,7 @@ async function ir(v,desdeHash){
     else if(base==="leads") await vLeads();
     else if(base==="afiliados") await vAfiliados();
     else if(base==="costos") await vCostos();
+    else if(base==="anuncios") await vAnuncios();
     else if(base==="eventos") await vEventos();
     else if(base==="diagnostico") await vDiagnostico();
     else if(base==="secuencias") await vSecuencias(arg);
@@ -308,6 +309,51 @@ let cache={};
 async function datosResumen(){const d=dias();if(!cache.res||cache.res.dias!==d||Date.now()-cache.res.t>60e3){const r=await api("resumen",{dias:d});cache.res={...r,t:Date.now()};}return cache.res;}
 const etiquetaRango=()=>$("#rango").selectedOptions[0].textContent.toLowerCase();
 
+// ---------- anuncios: every ad platform side by side, and what each one really brought to the site ----------
+async function vAnuncios(){
+  const r=await api("anuncios",{dias:dias()}), P=r.plataformas||{}, S=r.sitio||[];
+  const mx=n=>"$"+(Number(n)||0).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const pc=n=>(Number(n)||0).toFixed(2)+"%";
+  const card=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
+  const NOM={meta:"Meta (Facebook e Instagram)",google:"Google Ads",tiktok:"TikTok Ads",x:"X Ads"};
+  const filas=Object.keys(NOM).map(k=>{const p=P[k]||{},t=p.total||{},s=S.find(x=>x.plataforma===k)||{};return{k,nombre:NOM[k],con:!!p.conectado,err:p.error,gasto:t.gasto||0,impresiones:t.impresiones||0,clics:t.clics||0,ctr:t.ctr||0,cpc:t.cpc||0,comp_pl:t.compras||0,reg_pl:t.registros||0,visitas:s.visitantes||0,reg:s.registros||0,checkout:s.pagos_iniciados||0,compras:s.compras||0,ingresos:s.ingresos||0};});
+  const T=filas.reduce((a,f)=>{["gasto","clics","impresiones","reg","compras","ingresos","visitas"].forEach(k=>a[k]=(a[k]||0)+f[k]);return a;},{});
+  const dot=f=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;background:${f.con?(f.err?"#C98A1B":"#2E9E6B"):"#C9CED3"}"></span>`;
+  let h=`<h2>Anuncios <span class="mut" style="font-size:15px">· ${esc(etiquetaRango())}</span></h2>
+  <div class="grid kpis">
+    ${card("Gasto en anuncios",mx(T.gasto)+" MXN",`${num(T.impresiones)} impresiones · ${num(T.clics)} clics`)}
+    ${card("Ventas que trajeron",num(T.compras),T.compras?`${mx(T.gasto/T.compras)} por venta`:"Contadas en tu sitio")}
+    ${card("Ingresos de esas ventas",mx(T.ingresos)+" MXN",T.gasto?`Retorno ${(T.ingresos/T.gasto).toFixed(2)}x lo gastado`:"–")}
+    ${card("Registros que trajeron",num(T.reg),T.reg&&T.gasto?`${mx(T.gasto/T.reg)} por registro`:`${num(T.visitas)} visitas`)}
+  </div>
+  <div class="card sec"><h3>Comparativo por plataforma</h3>${tabla([
+    {t:"Plataforma",f:f=>dot(f)+esc(f.nombre)+(f.con?"":' <span class="mut">(sin conectar)</span>')},
+    {t:"Gasto",n:1,f:f=>f.con?mx(f.gasto):"–"},{t:"Clics",n:1,f:f=>f.con?num(f.clics):"–"},{t:"CTR",n:1,f:f=>f.con?pc(f.ctr):"–"},{t:"Costo por clic",n:1,f:f=>f.con&&f.clics?mx(f.cpc):"–"},
+    {t:"Visitas al sitio",n:1,f:f=>num(f.visitas)},{t:"Registros",n:1,f:f=>num(f.reg)},{t:"Ventas",n:1,f:f=>num(f.compras)},
+    {t:"Costo por venta",n:1,f:f=>f.compras&&f.gasto?mx(f.gasto/f.compras):"–"},{t:"Retorno",n:1,f:f=>f.gasto?(f.ingresos/f.gasto).toFixed(2)+"x":"–"},
+    {t:"Ventas según la plataforma",n:1,f:f=>f.con?num(f.comp_pl):"–"}],filas)}
+  <p class="mut" style="font-size:12.5px;margin:10px 0 0">Gasto, clics y CTR los reporta cada plataforma. Visitas, registros y ventas los cuenta tu sitio según de dónde llegó cada persona la primera vez, así que puedes compararlas entre plataformas sin que cada una se dé crédito de más. La última columna es lo que la plataforma dice que vendió (incluye gente que solo vio el anuncio). Las visitas incluyen publicaciones orgánicas de esa red; para separarlas, ponle a cada anuncio <span class="mono">utm_medium=paid</span>.</p></div>`;
+  const M=P.meta;
+  if(M&&M.conectado){
+    if(M.error) h+=`<div class="card sec"><h3>Meta</h3><p class="mut">No se pudo leer: ${esc(M.error)}</p></div>`;
+    else {
+      const t=M.total||{}, dia=(M.por_dia||[]).map(x=>({dia:x.fecha,gasto:x.gasto,clics:x.clics,registros:x.registros,compras:x.compras}));
+      h+=`<h2 style="margin-top:28px">Meta <span class="mut" style="font-size:15px">· cuenta ${esc(M.cuenta||"")}${M.activa?"":" (inactiva)"}</span></h2>
+      <div class="grid kpis">
+        ${card("Gasto",mx(t.gasto)+" "+esc(M.moneda||""),`${num(t.alcance)} personas · frecuencia ${(t.frecuencia||0).toFixed(2)}`)}
+        ${card("Clics al sitio",num(t.clics),`CTR ${pc(t.ctr)} · ${mx(t.cpc)} por clic · CPM ${mx(t.cpm)}`)}
+        ${card("Registros (según Meta)",num(t.registros),t.registros?`${mx(t.gasto/t.registros)} cada uno`:"–")}
+        ${card("Compras (según Meta)",num(t.compras),t.compras?`${mx(t.gasto/t.compras)} cada una · ${num(t.pagos)} abrieron el pago`:`${num(t.pagos)} abrieron el pago`)}
+      </div>
+      ${dia.length?`<div class="grid two sec"><div class="card"><h3>Gasto por día</h3>${lineas(dia,[{k:"gasto",n:"Gasto",c:"#4A5866",barra:true}])}</div><div class="card"><h3>Clics, registros y compras por día</h3>${lineas(dia,[{k:"clics",n:"Clics",c:"#4A5866"},{k:"registros",n:"Registros",c:"#4F82BC"},{k:"compras",n:"Compras",c:"#9DAAB6"}])}</div></div>`:""}
+      <div class="card sec"><h3>Campañas</h3>${(M.campanas||[]).length?tabla([{t:"Campaña",f:x=>esc(x.nombre)},{t:"Gasto",n:1,f:x=>mx(x.gasto)},{t:"Impresiones",n:1,f:x=>num(x.impresiones)},{t:"Clics",n:1,f:x=>num(x.clics)},{t:"CTR",n:1,f:x=>pc(x.ctr)},{t:"Costo por clic",n:1,f:x=>x.clics?mx(x.cpc):"–"},{t:"CPM",n:1,f:x=>mx(x.cpm)},{t:"Registros",n:1,f:x=>num(x.registros)},{t:"Compras",n:1,f:x=>num(x.compras)},{t:"Costo por compra",n:1,f:x=>x.compras?mx(x.gasto/x.compras):"–"}],M.campanas):'<p class="mut">Todavía no hay campañas con gasto en estas fechas.</p>'}</div>
+      <div class="card sec"><h3>Anuncios</h3>${(M.anuncios||[]).length?tabla([{t:"Anuncio",f:x=>`${esc(x.nombre)}<br><span class="mut">${esc(x.campana||"")}</span>`},{t:"Gasto",n:1,f:x=>mx(x.gasto)},{t:"Clics",n:1,f:x=>num(x.clics)},{t:"CTR",n:1,f:x=>pc(x.ctr)},{t:"Costo por clic",n:1,f:x=>x.clics?mx(x.cpc):"–"},{t:"Registros",n:1,f:x=>num(x.registros)},{t:"Compras",n:1,f:x=>num(x.compras)}],M.anuncios):'<p class="mut">Todavía no hay anuncios con gasto en estas fechas.</p>'}</div>`;
+    }
+  }
+  const faltan=filas.filter(f=>!f.con).map(f=>f.nombre);
+  if(faltan.length) h+=`<div class="card sec"><h3>Por conectar</h3><p class="mut">${esc(faltan.join(", "))}. Cada una se conecta igual que Meta, con una llave de solo lectura de su cuenta de anuncios, y aparece en el comparativo y con su propia sección aquí.</p></div>`;
+  main.innerHTML=h;
+}
 // ---------- costos: what each service is charging and how close each free plan is ----------
 async function vCostos(){
   const r=await api("costos"), u=r.uso||{}, ia=r.ia||{}, A=ia.anthropic||{}, G=ia.gemini||{};
@@ -349,7 +395,7 @@ async function vCostos(){
     const k=c.conexiones||{}, S=c.stripe, E=c.sender, M=c.meta;
     const chip=(ok,n)=>`<span style="display:inline-flex;align-items:center;gap:6px;margin:0 16px 8px 0;font-size:13.5px"><span style="width:8px;height:8px;border-radius:50%;background:${ok?"#2E9E6B":"var(--bad)"}"></span>${esc(n)}${ok?"":' <span class="mut">(falta conectar)</span>'}</span>`;
     const mx=n=>"$"+(Number(n)||0).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2});
-    let h=`<div class="card sec"><h3>Conexiones</h3><div>${chip(k.supabase,"Supabase")}${chip(k.stripe,"Stripe")}${chip(k.sender,"Sender")}${chip(k.meta_pixel,"Pixel de Meta")}${chip(k.meta_ads,"Anuncios de Meta")}${chip(k.anthropic_real,"Cobro real de Anthropic")}</div></div>`;
+    let h=`<div class="card sec"><h3>Conexiones</h3><div>${chip(k.supabase,"Supabase")}${chip(k.stripe,"Stripe")}${chip(k.sender,"Sender")}${chip(k.meta_pixel,"Pixel de Meta")}${chip(k.anthropic_real,"Cobro real de Anthropic")}</div></div>`;
     if(S&&!S.error) h+=`<h2 style="margin-top:28px">Stripe <span class="mut" style="font-size:15px">· este mes</span></h2><div class="grid kpis">
       ${card("Cobrado",mx(S.bruto)+" "+S.moneda,`${num(S.cobros)} cobros`)}
       ${card("Comisiones de Stripe",mx(S.comisiones),S.bruto?`${Math.round(S.comisiones/S.bruto*100)}% de lo cobrado`:"")}
@@ -357,14 +403,6 @@ async function vCostos(){
       ${card("Saldo en Stripe",mx(S.disponible),`${mx(S.pendiente)} por liberar · ${mx(S.depositado)} ya depositado`)}</div>`;
     else if(S&&S.error) h+=`<div class="card sec"><h3>Stripe</h3><p class="mut">No se pudo leer: ${esc(S.error)}</p></div>`;
     if(E&&!E.error) h+=`<div class="card funnel sec"><h3>Sender (lista de correos)</h3>${E.total!=null?barra("Contactos en Sender",E.total,2500,""):""}${(E.grupos||[]).length?tabla([{t:"Grupo",f:x=>esc(x.nombre)},{t:"Contactos",n:1,f:x=>num(x.total)},{t:"Activos",n:1,f:x=>num(x.activos)},{t:"Se dieron de baja",n:1,f:x=>num(x.bajas)},{t:"Rebotaron",n:1,f:x=>num(x.rebotes)}],E.grupos):""}<p class="mut" style="font-size:12.5px;margin:10px 0 0">El plan gratis de Sender llega a 2,500 contactos. Los correos que rebotan se dan de baja solos y no se vuelven a intentar.</p></div>`;
-    if(M&&!M.error&&M.mes){
-      const f=x=>x?[card("Gasto",mx(x.gasto)+" "+esc(M.cuenta.moneda||""),`${num(x.impresiones)} impresiones · ${num(x.alcance)} personas`),card("Clics al sitio",num(x.clics),`CTR ${x.ctr.toFixed(2)}% · ${mx(x.cpc)} por clic`),card("Registros",num(x.registros),x.costo_registro!=null?`${mx(x.costo_registro)} cada uno`:"–"),card("Compras",num(x.compras),x.costo_compra!=null?`${mx(x.costo_compra)} cada una`:`${num(x.pagos)} abrieron el pago`)].join(""):"";
-      h+=`<h2 style="margin-top:28px">Anuncios de Meta <span class="mut" style="font-size:15px">· ${esc(M.cuenta.nombre||"")}</span></h2>
-      <p class="mut" style="margin:-4px 0 12px">Este mes</p><div class="grid kpis">${f(M.mes)}</div>
-      <p class="mut" style="margin:18px 0 12px">Últimos 7 días</p><div class="grid kpis">${f(M.d7)}</div>
-      <div class="card sec"><h3>Campañas (30 días)</h3>${(M.campanas||[]).length?tabla([{t:"Campaña",f:x=>esc(x.nombre)},{t:"Gasto",n:1,f:x=>mx(x.gasto)},{t:"Clics",n:1,f:x=>num(x.clics)},{t:"CTR",n:1,f:x=>x.ctr.toFixed(2)+"%"},{t:"Registros",n:1,f:x=>num(x.registros)},{t:"Compras",n:1,f:x=>num(x.compras)},{t:"Costo por compra",n:1,f:x=>x.costo_compra!=null?mx(x.costo_compra):"–"}],M.campanas):'<p class="mut">Todavía no hay campañas con gasto.</p>'}</div>`;
-    } else if(M&&!M.error&&M.cuenta) h+=`<div class="card sec"><h3>Anuncios de Meta <span class="mut" style="font-size:14px">· ${esc(M.cuenta.nombre||"")}</span></h3><p class="mut">Conectado. La cuenta todavía no tiene gasto; en cuanto corras la primera campaña, aquí ves el gasto, los clics, los registros, las compras y el costo por compra de cada campaña.</p></div>`;
-    else h+=`<div class="card sec"><h3>Anuncios de Meta</h3><p class="mut">${M&&M.error?"No se pudo leer: "+esc(M.error):"Falta conectar la cuenta de anuncios. En cuanto esté, aquí ves el gasto, los clics, los registros, las compras y el costo por compra de cada campaña."}</p></div>`;
     box.innerHTML=h;
   }).catch(()=>{});
   // GitHub: site size and publishes in the last hour, from GitHub's public API (no key needed)
