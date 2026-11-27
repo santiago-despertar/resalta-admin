@@ -333,7 +333,6 @@ async function vCostos(){
     ${barra("Supabase · archivos (fotos y correos)",(u.storage_bytes||0)/MB,1024,"MB")}
     ${barra("Supabase · base de datos",(u.db_bytes||0)/MB,500,"MB")}
     ${barra("Supabase · usuarios activos del mes",u.usuarios_mes||0,50000,"")}
-    ${barra("Sender · contactos",u.contactos_correo||0,2500,"")}
     ${barra("Sender · correos este mes",u.correos_mes||0,15000,"")}
     <p class="mut" style="font-size:12.5px;margin:10px 0 0">Arriba de 70% se pone en amarillo y arriba de 90% en rojo. El tráfico de salida de Supabase (5 GB al mes) solo se ve en <a href="https://supabase.com/dashboard/org/kiqzforugctkgizptdxq/usage" target="_blank" rel="noopener">su página de uso</a>. Los contactos de Sender son las personas distintas a las que les hemos mandado correo.</p></div>
   <div class="card sec"><h3>Qué pagas y cuándo</h3>${tabla([{t:"Servicio",f:x=>`<b>${x[0]}</b>`},{t:"Cómo cobra",f:x=>x[1]},{t:"Cómo vas",f:x=>x[2]},{t:"Cuándo pagar",f:x=>x[3]}],[
@@ -343,6 +342,30 @@ async function vCostos(){
     ["Sender","Gratis hasta 2,500 contactos y 15,000 correos al mes.",`${Math.round(Math.max(contactosP,correosP))}% del límite`,"Cuando alguna barra de Sender pase 70%."],
     ["Stripe","Comisión por cada venta, se descuenta sola.","–","Nunca por adelantado."],
     ["GitHub Pages","Gratis, porque los repositorios son públicos.","Abajo","No a este tamaño."]])}</div>`;
+  // Stripe, Sender and Meta Ads, read live from each service
+  main.insertAdjacentHTML("beforeend",'<div id="cuentasBox"></div>');
+  api("cuentas").then(c=>{
+    const box=$("#cuentasBox"); if(!box||!c||!c.ok) return;
+    const k=c.conexiones||{}, S=c.stripe, E=c.sender, M=c.meta;
+    const chip=(ok,n)=>`<span style="display:inline-flex;align-items:center;gap:6px;margin:0 16px 8px 0;font-size:13.5px"><span style="width:8px;height:8px;border-radius:50%;background:${ok?"#2E9E6B":"var(--bad)"}"></span>${esc(n)}${ok?"":' <span class="mut">(falta conectar)</span>'}</span>`;
+    const mx=n=>"$"+(Number(n)||0).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2});
+    let h=`<div class="card sec"><h3>Conexiones</h3><div>${chip(k.supabase,"Supabase")}${chip(k.stripe,"Stripe")}${chip(k.sender,"Sender")}${chip(k.meta_pixel,"Pixel de Meta")}${chip(k.meta_ads,"Anuncios de Meta")}${chip(k.anthropic_real,"Cobro real de Anthropic")}</div></div>`;
+    if(S&&!S.error) h+=`<h2 style="margin-top:28px">Stripe <span class="mut" style="font-size:15px">· este mes</span></h2><div class="grid kpis">
+      ${card("Cobrado",mx(S.bruto)+" "+S.moneda,`${num(S.cobros)} cobros`)}
+      ${card("Comisiones de Stripe",mx(S.comisiones),S.bruto?`${Math.round(S.comisiones/S.bruto*100)}% de lo cobrado`:"")}
+      ${card("Te queda",mx(S.neto),`Reembolsos ${mx(S.reembolsos)} · disputas ${mx(S.disputas)}`)}
+      ${card("Saldo en Stripe",mx(S.disponible),`${mx(S.pendiente)} por liberar · ${mx(S.depositado)} ya depositado`)}</div>`;
+    else if(S&&S.error) h+=`<div class="card sec"><h3>Stripe</h3><p class="mut">No se pudo leer: ${esc(S.error)}</p></div>`;
+    if(E&&!E.error) h+=`<div class="card funnel sec"><h3>Sender (lista de correos)</h3>${E.total!=null?barra("Contactos en Sender",E.total,2500,""):""}${(E.grupos||[]).length?tabla([{t:"Grupo",f:x=>esc(x.nombre)},{t:"Contactos",n:1,f:x=>num(x.total)},{t:"Activos",n:1,f:x=>num(x.activos)},{t:"Se dieron de baja",n:1,f:x=>num(x.bajas)},{t:"Rebotaron",n:1,f:x=>num(x.rebotes)}],E.grupos):""}<p class="mut" style="font-size:12.5px;margin:10px 0 0">El plan gratis de Sender llega a 2,500 contactos. Los correos que rebotan se dan de baja solos y no se vuelven a intentar.</p></div>`;
+    if(M&&!M.error&&M.mes){
+      const f=x=>x?[card("Gasto",mx(x.gasto)+" "+esc(M.cuenta.moneda||""),`${num(x.impresiones)} impresiones · ${num(x.alcance)} personas`),card("Clics al sitio",num(x.clics),`CTR ${x.ctr.toFixed(2)}% · ${mx(x.cpc)} por clic`),card("Registros",num(x.registros),x.costo_registro!=null?`${mx(x.costo_registro)} cada uno`:"–"),card("Compras",num(x.compras),x.costo_compra!=null?`${mx(x.costo_compra)} cada una`:`${num(x.pagos)} abrieron el pago`)].join(""):"";
+      h+=`<h2 style="margin-top:28px">Anuncios de Meta <span class="mut" style="font-size:15px">· ${esc(M.cuenta.nombre||"")}</span></h2>
+      <p class="mut" style="margin:-4px 0 12px">Este mes</p><div class="grid kpis">${f(M.mes)}</div>
+      <p class="mut" style="margin:18px 0 12px">Últimos 7 días</p><div class="grid kpis">${f(M.d7)}</div>
+      <div class="card sec"><h3>Campañas (30 días)</h3>${(M.campanas||[]).length?tabla([{t:"Campaña",f:x=>esc(x.nombre)},{t:"Gasto",n:1,f:x=>mx(x.gasto)},{t:"Clics",n:1,f:x=>num(x.clics)},{t:"CTR",n:1,f:x=>x.ctr.toFixed(2)+"%"},{t:"Registros",n:1,f:x=>num(x.registros)},{t:"Compras",n:1,f:x=>num(x.compras)},{t:"Costo por compra",n:1,f:x=>x.costo_compra!=null?mx(x.costo_compra):"–"}],M.campanas):'<p class="mut">Todavía no hay campañas con gasto.</p>'}</div>`;
+    } else h+=`<div class="card sec"><h3>Anuncios de Meta</h3><p class="mut">${M&&M.error?"No se pudo leer: "+esc(M.error):"Falta conectar la cuenta de anuncios. En cuanto esté, aquí ves el gasto, los clics, los registros, las compras y el costo por compra de cada campaña."}</p></div>`;
+    box.innerHTML=h;
+  }).catch(()=>{});
   // GitHub: site size and publishes in the last hour, from GitHub's public API (no key needed)
   main.insertAdjacentHTML("beforeend",'<div id="ghUso"></div>');
   (async()=>{
