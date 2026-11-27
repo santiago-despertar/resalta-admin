@@ -368,7 +368,7 @@ async function vCostos(){
   <div class="grid kpis">
     ${card("IA este mes",usd((typeof r.anthropic_real==="number"?r.anthropic_real:(A.mes||0))+(G.mes||0)),`${usd((A.hoy||0)+(G.hoy||0))} en las últimas 24 horas`)}
     ${typeof r.anthropic_real==="number"?card("Anthropic este mes",usd(r.anthropic_real),`Cobro real de Anthropic · estimado ${usd(A.mes)}`):card("Anthropic este mes",usd(A.mes),`Estimado · ${usd(A.d30)} en 30 días`)}
-    ${card("Gemini este mes",usd(G.mes),`${num(G.imagenes_mes||0)} imágenes`)}
+    ${r.google_real?card("Google este mes","MX$"+Number(r.google_real.costo||0).toFixed(2),`Cobro real de Google Cloud · presupuesto MX$${num(r.google_real.monto_presupuesto||0)}`):card("Gemini este mes",usd(G.mes),`Estimado · ${num(G.imagenes_mes||0)} imágenes`)}
     ${card("Correos fallidos",num(u.correos_fallidos_30d||0),`En 30 días · ${num(u.bajas||0)} dados de baja`)}
   </div>
   <div class="card sec"><h3>Gasto de IA por función (30 días)</h3>${(r.funciones||[]).length?tabla([
@@ -382,8 +382,8 @@ async function vCostos(){
     ${barra("Sender · correos este mes",u.correos_mes||0,15000,"")}
     <p class="mut" style="font-size:12.5px;margin:10px 0 0">Arriba de 70% se pone en amarillo y arriba de 90% en rojo. El tráfico de salida de Supabase (5 GB al mes) solo se ve en <a href="https://supabase.com/dashboard/org/kiqzforugctkgizptdxq/usage" target="_blank" rel="noopener">su página de uso</a>. Los contactos de Sender son las personas distintas a las que les hemos mandado correo.</p></div>
   <div class="card sec"><h3>Qué pagas y cuándo</h3>${tabla([{t:"Servicio",f:x=>`<b>${x[0]}</b>`},{t:"Cómo cobra",f:x=>x[1]},{t:"Cómo vas",f:x=>x[2]},{t:"Cuándo pagar",f:x=>x[3]}],[
-    ["Anthropic","Saldo prepagado. Si se acaba, se cae la calificación.",usd(typeof r.anthropic_real==="number"?r.anthropic_real:A.mes)+" este mes","Ya: deja activa la recarga automática."],
-    ["Google Gemini","Pago por uso con tarjeta. Solo reportes pagados y simulador, unos US$0.13 por imagen.",usd(G.mes)+" este mes (contado desde el 27 nov)","Presupuesto de MX$1,000 al mes con alertas por correo, ya activo."],
+    ["Anthropic","Saldo prepagado. Si se acaba, se cae la calificación.",usd(typeof r.anthropic_real==="number"?r.anthropic_real:A.mes)+" este mes","Recarga automática activa: US$10 cada vez que baja de US$5."],
+    ["Google Gemini","Pago por uso con tarjeta. Solo reportes pagados y simulador, unos US$0.13 por imagen.",(r.google_real?"MX$"+Number(r.google_real.costo||0).toFixed(2)+" este mes, cobro real":usd(G.mes)+" este mes, estimado"),"No se recarga: Google cobra a tu tarjeta. Alertas por correo al 50, 90 y 100% de MX$1,000."],
     ["Supabase","Gratis. El plan Pro cuesta US$25 al mes.",`Archivos al ${Math.round(archivosP)}%`,"Cuando alguna barra de Supabase pase 70%."],
     ["Sender","Gratis hasta 2,500 contactos y 15,000 correos al mes.",`${Math.round(Math.max(contactosP,correosP))}% del límite`,"Cuando alguna barra de Sender pase 70%."],
     ["Stripe","Comisión por cada venta, se descuenta sola.","–","Nunca por adelantado."],
