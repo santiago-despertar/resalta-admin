@@ -321,7 +321,7 @@ async function vCostos(){
   main.innerHTML=`<h2>Costos y límites</h2>
   <div class="grid kpis">
     ${card("IA este mes",usd((A.mes||0)+(G.mes||0)),`${usd((A.hoy||0)+(G.hoy||0))} en las últimas 24 horas`)}
-    ${card("Anthropic este mes",usd(A.mes),`${usd(A.d30)} en 30 días`)}
+    ${typeof r.anthropic_real==="number"?card("Anthropic este mes",usd(r.anthropic_real),`Cobro real de Anthropic · estimado ${usd(A.mes)}`):card("Anthropic este mes",usd(A.mes),`Estimado · ${usd(A.d30)} en 30 días`)}
     ${card("Gemini este mes",usd(G.mes),`${num(G.imagenes_mes||0)} imágenes`)}
     ${card("Correos fallidos",num(u.correos_fallidos_30d||0),`En 30 días · ${num(u.bajas||0)} dados de baja`)}
   </div>
@@ -342,7 +342,16 @@ async function vCostos(){
     ["Supabase","Gratis. El plan Pro cuesta US$25 al mes.",`Archivos al ${Math.round(archivosP)}%`,"Cuando alguna barra de Supabase pase 70%."],
     ["Sender","Gratis hasta 2,500 contactos y 15,000 correos al mes.",`${Math.round(Math.max(contactosP,correosP))}% del límite`,"Cuando alguna barra de Sender pase 70%."],
     ["Stripe","Comisión por cada venta, se descuenta sola.","–","Nunca por adelantado."],
-    ["GitHub Pages","Gratis.","–","No a este tamaño."]])}</div>`;
+    ["GitHub Pages","Gratis, porque los repositorios son públicos.","Abajo","No a este tamaño."]])}</div>`;
+  // GitHub: site size and publishes in the last hour, from GitHub's public API (no key needed)
+  main.insertAdjacentHTML("beforeend",'<div id="ghUso"></div>');
+  (async()=>{
+    const base="https://api.github.com/repos/santiago-despertar/";
+    const [repo,runs]=await Promise.all([fetch(base+"resalta").then(x=>x.json()),fetch(base+"resalta/actions/runs?per_page=30").then(x=>x.json())]);
+    const box=$("#ghUso"); if(!box||!repo||repo.size==null) return;
+    const hora=Date.now()-3600e3, pub=(runs.workflow_runs||[]).filter(x=>x.name==="pages build and deployment"&&new Date(x.created_at).getTime()>=hora).length;
+    box.innerHTML=`<div class="card funnel sec"><h3>GitHub (donde vive el sitio)</h3>${barra("Tamaño del repositorio del sitio",repo.size/1024,1024,"MB")}${barra("Publicaciones en la última hora",pub,10,"")}<p class="mut" style="font-size:12.5px;margin:10px 0 0">GitHub Pages es gratis. Sus límites son 1 GB de sitio, unos 100 GB de tráfico al mes y unas 10 publicaciones por hora. GitHub no da a nadie el dato del tráfico, ni por API; si se pasara, te escribe por correo. Las Actions no cuestan porque los repositorios son públicos.</p></div>`;
+  })().catch(()=>{});
 }
 async function vResumen(){
   const r=await datosResumen(), k=r.kpis, e=r.embudo;
