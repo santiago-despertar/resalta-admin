@@ -160,7 +160,7 @@ details summary{cursor:pointer;color:var(--deep);font-size:13px;margin:8px 0}
     </div>
     <nav class="tabs" id="tabs">
       <button data-v="resumen" class="on">Resumen</button><button data-v="analitica">Analítica</button><button data-v="enlaces">Enlaces</button><button data-v="usuarios">Usuarios</button>
-      <button data-v="pedidos">Pedidos</button><button data-v="leads">Leads</button><button data-v="afiliados">Afiliados</button><button data-v="diagnostico">Diagnóstico</button><button data-v="secuencias">Secuencias</button><button data-v="correos">Correos</button><button data-v="eventos">Eventos en vivo</button>
+      <button data-v="pedidos">Pedidos</button><button data-v="leads">Leads</button><button data-v="afiliados">Afiliados</button><button data-v="diagnostico">Diagnóstico</button><button data-v="secuencias">Secuencias</button><button data-v="correos">Correos</button><button data-v="costos">Costos</button><button data-v="eventos">Eventos en vivo</button>
     </nav>
   </div></header>
   <main class="wrap" id="main"><div class="load">Cargando…</div></main>
@@ -230,6 +230,7 @@ async function ir(v,desdeHash){
     else if(base==="pedidos") await vPedidos();
     else if(base==="leads") await vLeads();
     else if(base==="afiliados") await vAfiliados();
+    else if(base==="costos") await vCostos();
     else if(base==="eventos") await vEventos();
     else if(base==="diagnostico") await vDiagnostico();
     else if(base==="secuencias") await vSecuencias(arg);
@@ -307,6 +308,42 @@ let cache={};
 async function datosResumen(){const d=dias();if(!cache.res||cache.res.dias!==d||Date.now()-cache.res.t>60e3){const r=await api("resumen",{dias:d});cache.res={...r,t:Date.now()};}return cache.res;}
 const etiquetaRango=()=>$("#rango").selectedOptions[0].textContent.toLowerCase();
 
+// ---------- costos: what each service is charging and how close each free plan is ----------
+async function vCostos(){
+  const r=await api("costos"), u=r.uso||{}, ia=r.ia||{}, A=ia.anthropic||{}, G=ia.gemini||{};
+  const usd=n=>"US$"+(Number(n)||0).toFixed(2);
+  const MB=1024*1024;
+  const card=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
+  const NOMBRE={calificar:"Calificación (gratis y onboarding)","generar-reporte":"Reporte pagado",chat:"Chat del reporte","plan-fisico":"Plan físico",proyeccion:"Simulador y proyecciones (imágenes)"};
+  const color=p=>p>=90?"var(--bad)":p>=70?"#C98A1B":"";
+  const barra=(n,x,max,un)=>{const p=max?x/max*100:0,c=color(p);return `<div class="st"><span>${esc(n)}</span><span class="tr"><span class="fl" style="display:block;width:${Math.max(1.5,Math.min(100,p))}%${c?";background:"+c:""}"></span></span><span>${num(Math.round(x))}${un?" "+un:""} de ${num(max)}${un?" "+un:""} · ${p<1?"menos de 1":Math.round(p)}%</span></div>`;};
+  const archivosP=(u.storage_bytes||0)/MB/1024*100, contactosP=(u.contactos_correo||0)/2500*100, correosP=(u.correos_mes||0)/15000*100;
+  main.innerHTML=`<h2>Costos y límites</h2>
+  <div class="grid kpis">
+    ${card("IA este mes",usd((A.mes||0)+(G.mes||0)),`${usd((A.hoy||0)+(G.hoy||0))} en las últimas 24 horas`)}
+    ${card("Anthropic este mes",usd(A.mes),`${usd(A.d30)} en 30 días`)}
+    ${card("Gemini este mes",usd(G.mes),`${num(G.imagenes_mes||0)} imágenes`)}
+    ${card("Correos fallidos",num(u.correos_fallidos_30d||0),`En 30 días · ${num(u.bajas||0)} dados de baja`)}
+  </div>
+  <div class="card sec"><h3>Gasto de IA por función (30 días)</h3>${(r.funciones||[]).length?tabla([
+    {t:"Función",f:x=>esc(NOMBRE[x.funcion]||x.funcion)},{t:"Modelo",f:x=>`<span class="mut">${esc(x.modelo||x.servicio)}</span>`},
+    {t:"Llamadas",n:1,f:x=>num(x.llamadas)},{t:"Costo",n:1,f:x=>usd(x.usd)},{t:"Por llamada",n:1,f:x=>"US$"+(x.usd/Math.max(1,x.llamadas)).toFixed(3)}],r.funciones):'<p class="mut">Todavía no hay gasto registrado.</p>'}
+  <p class="mut" style="font-size:12.5px;margin:10px 0 0">Calculado con los precios de lista de cada modelo. La calificación y los reportes se cuentan desde que empezaron; el chat, el plan físico y el simulador, desde el 27 de noviembre. El cobro exacto está en <a href="https://console.anthropic.com/settings/billing" target="_blank" rel="noopener">Anthropic</a> y en <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener">Google Cloud</a>.</p></div>
+  <div class="card funnel sec"><h3>Planes gratis: cuánto llevas</h3>
+    ${barra("Supabase · archivos (fotos y correos)",(u.storage_bytes||0)/MB,1024,"MB")}
+    ${barra("Supabase · base de datos",(u.db_bytes||0)/MB,500,"MB")}
+    ${barra("Supabase · usuarios activos del mes",u.usuarios_mes||0,50000,"")}
+    ${barra("Sender · contactos",u.contactos_correo||0,2500,"")}
+    ${barra("Sender · correos este mes",u.correos_mes||0,15000,"")}
+    <p class="mut" style="font-size:12.5px;margin:10px 0 0">Arriba de 70% se pone en amarillo y arriba de 90% en rojo. El tráfico de salida de Supabase (5 GB al mes) solo se ve en <a href="https://supabase.com/dashboard/org/kiqzforugctkgizptdxq/usage" target="_blank" rel="noopener">su página de uso</a>. Los contactos de Sender son las personas distintas a las que les hemos mandado correo.</p></div>
+  <div class="card sec"><h3>Qué pagas y cuándo</h3>${tabla([{t:"Servicio",f:x=>`<b>${x[0]}</b>`},{t:"Cómo cobra",f:x=>x[1]},{t:"Cómo vas",f:x=>x[2]},{t:"Cuándo pagar",f:x=>x[3]}],[
+    ["Anthropic","Saldo prepagado. Si se acaba, se cae la calificación.",usd(A.mes)+" este mes","Ya: deja activa la recarga automática."],
+    ["Google Gemini","Pago por uso con tarjeta. Solo reportes pagados y simulador, unos US$0.13 por imagen.",usd(G.mes)+" este mes","Ya: ponle un presupuesto con alerta."],
+    ["Supabase","Gratis. El plan Pro cuesta US$25 al mes.",`Archivos al ${Math.round(archivosP)}%`,"Cuando alguna barra de Supabase pase 70%."],
+    ["Sender","Gratis hasta 2,500 contactos y 15,000 correos al mes.",`${Math.round(Math.max(contactosP,correosP))}% del límite`,"Cuando alguna barra de Sender pase 70%."],
+    ["Stripe","Comisión por cada venta, se descuenta sola.","–","Nunca por adelantado."],
+    ["GitHub Pages","Gratis.","–","No a este tamaño."]])}</div>`;
+}
 async function vResumen(){
   const r=await datosResumen(), k=r.kpis, e=r.embudo;
   const card=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
